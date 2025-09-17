@@ -44,7 +44,8 @@ impl<T: GenericBitSet> From<T> for BitSetDocSet<T> {
     }
 }
 
-impl DocSet for BitSetDocSet {
+
+impl<T: GenericBitSet> DocSet for BitSetDocSet<T> {
     #[inline]
     fn advance(&mut self) -> DocId {
         if let Some(lower) = self.cursor_tinybitset.pop_lowest() {

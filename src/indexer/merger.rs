@@ -220,7 +220,8 @@ impl IndexMerger {
     fn write_fast_fields(
         &self,
         fast_field_wrt: &mut WritePtr,
-        doc_id_mapping: SegmentDocIdMapping,
+        doc_id_mapping: &SegmentDocIdMapping,
+        // doc_id_mapping: &SegmentDocIdMapping
     ) -> crate::Result<()> {
         debug_time!("write-fast-fields");
         let required_columns = extract_fast_field_required_columns(&self.schema);
@@ -229,7 +230,8 @@ impl IndexMerger {
             .iter()
             .map(|reader| reader.fast_fields().columnar())
             .collect();
-        let merge_row_order = convert_to_merge_order(&columnars[..], doc_id_mapping);
+
+        let merge_row_order = convert_to_merge_order(&columnars[..], doc_id_mapping.clone());
         columnar::merge_columnar(
             &columnars[..],
             &required_columns,
@@ -525,7 +527,9 @@ impl IndexMerger {
     ///
     /// # Returns
     /// The number of documents in the resulting segment.
-    pub fn write(&self, mut serializer: SegmentSerializer) -> crate::Result<u32,SegmentDocIdMapping> {
+    // pub fn write(&self, mut serializer: SegmentSerializer) -> crate::Result<u32> {
+    pub fn write(&self, mut serializer: SegmentSerializer) -> crate::Result<(u32,
+    SegmentDocIdMapping)> {
         let doc_id_mapping = self.get_doc_id_from_concatenated_data()?;
         debug!("write-fieldnorms");
         if let Some(fieldnorms_serializer) = serializer.extract_fieldnorms_serializer() {
@@ -545,11 +549,12 @@ impl IndexMerger {
         debug!("write-storagefields");
         self.write_storable_fields(serializer.get_store_writer())?;
         debug!("write-fastfields");
-        self.write_fast_fields(serializer.get_fast_field_write(), doc_id_mapping)?;
+        self.write_fast_fields(serializer.get_fast_field_write(), &doc_id_mapping)?;
 
         debug!("close-serializer");
         serializer.close()?;
-        Ok(self.max_doc, doc_id_mapping)
+        Ok((self.max_doc, doc_id_mapping))
+        // Ok(self.max_doc)
     }
 }
 

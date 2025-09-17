@@ -3,7 +3,9 @@
 
 use common::ReadOnlyBitSet;
 
-use crate::DocAddress;
+
+use crate::{DocAddress, DocId, Order, TantivyError};
+
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum MappingType {

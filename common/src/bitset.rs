@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::io::Read;
 use std::{fmt, io};
 
 use ownedbytes::OwnedBytes;
