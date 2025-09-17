@@ -156,6 +156,11 @@ impl TermDictionary {
         self.0.search(automaton)
     }
 
+    /// Returns the number of terms in the dictionary.
+    pub fn term_info_from_ord(&self, ord: TermOrdinal) -> TermInfo {
+        self.0.term_info_from_ord(ord)
+    }
+
     #[cfg(feature = "quickwit")]
     /// Lookups the value corresponding to the key.
     pub async fn get_async<K: AsRef<[u8]>>(&self, key: K) -> io::Result<Option<TermInfo>> {

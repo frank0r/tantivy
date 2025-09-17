@@ -1,0 +1,2826 @@
+From dd284e60ebfdc4bcca9a4e9fa79671090d3c3a1c Mon Sep 17 00:00:00 2001
+From: Sujay Jayakar <sujayakar@convex.dev>
+Date: Tue, 28 Feb 2023 13:42:26 -0500
+Subject: [PATCH] Make Term::as_slice public
+
+---
+ src/schema/term.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/schema/term.rs b/src/schema/term.rs
+index ad393b1db..dcd293cb4 100644
+--- a/src/schema/term.rs
++++ b/src/schema/term.rs
+@@ -375,7 +375,7 @@ where B: AsRef<[u8]>
+     ///
+     /// Do NOT rely on this byte representation in the index.
+     /// This value is likely to change in the future.
+-    pub(crate) fn as_slice(&self) -> &[u8] {
++    pub fn as_slice(&self) -> &[u8] {
+         self.0.as_ref()
+     }
+ }
+-- 
+2.46.0
+
+From 8fb86d8f22429c73a3edacc17756e76431ee5ad9 Mon Sep 17 00:00:00 2001
+From: rakeeb-hossain <rakeeb@convex.dev>
+Date: Wed, 13 Dec 2023 19:22:57 -0800
+Subject: [PATCH] reexport
+
+---
+ src/lib.rs | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/lib.rs b/src/lib.rs
+index 2929c2f1c..7dab76070 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -127,6 +127,7 @@ mod future_result;
+ ///
+ /// Tantivy uses [`time`](https://crates.io/crates/time) for dates.
+ pub use time;
++pub use tantivy_fst;
+ 
+ use crate::time::format_description::well_known::Rfc3339;
+ use crate::time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
+-- 
+2.46.0
+
+From b503e5fdda1fd3566b67354420f200aead9f38fd Mon Sep 17 00:00:00 2001
+From: rakeeb-hossain <rakeeb@convex.dev>
+Date: Wed, 13 Dec 2023 19:25:13 -0800
+Subject: [PATCH] rename
+
+---
+ src/lib.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/lib.rs b/src/lib.rs
+index 7dab76070..5367f9c75 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -127,7 +127,7 @@ mod future_result;
+ ///
+ /// Tantivy uses [`time`](https://crates.io/crates/time) for dates.
+ pub use time;
+-pub use tantivy_fst;
++pub use tantivy_fst as fst;
+ 
+ use crate::time::format_description::well_known::Rfc3339;
+ use crate::time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
+-- 
+2.46.0
+
+From 57ec1b535e90658982da07e55219dcfe942e85a0 Mon Sep 17 00:00:00 2001
+From: Sujay Jayakar <sujayakar@convex.dev>
+Date: Wed, 1 May 2024 12:51:29 -0400
+Subject: [PATCH] Export functionality on BlockSegmentPostings
+
+---
+ src/postings/block_segment_postings.rs | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/src/postings/block_segment_postings.rs b/src/postings/block_segment_postings.rs
+index bf131627c..823f78c3f 100644
+--- a/src/postings/block_segment_postings.rs
++++ b/src/postings/block_segment_postings.rs
+@@ -23,14 +23,14 @@ fn max_score<I: Iterator<Item = Score>>(mut it: I) -> Option<Score> {
+ /// use cases, you should prefer using `SegmentPostings` for most usage.
+ #[derive(Clone)]
+ pub struct BlockSegmentPostings {
+-    pub(crate) doc_decoder: BlockDecoder,
++    pub doc_decoder: BlockDecoder,
+     loaded_offset: usize,
+     freq_decoder: BlockDecoder,
+     freq_reading_option: FreqReadingOption,
+     block_max_score_cache: Option<Score>,
+     doc_freq: u32,
+     data: OwnedBytes,
+-    pub(crate) skip_reader: SkipReader,
++    pub skip_reader: SkipReader,
+ }
+ 
+ fn decode_bitpacked_block(
+@@ -78,7 +78,7 @@ fn split_into_skips_and_postings(
+ }
+ 
+ impl BlockSegmentPostings {
+-    pub(crate) fn open(
++    pub fn open(
+         doc_freq: u32,
+         data: FileSlice,
+         record_option: IndexRecordOption,
+@@ -150,7 +150,7 @@ impl BlockSegmentPostings {
+         bm25_weight.max_score()
+     }
+ 
+-    pub(crate) fn freq_reading_option(&self) -> FreqReadingOption {
++    pub fn freq_reading_option(&self) -> FreqReadingOption {
+         self.freq_reading_option
+     }
+ 
+@@ -164,7 +164,7 @@ impl BlockSegmentPostings {
+     // # Warning
+     //
+     // This does not reset the positions list.
+-    pub(crate) fn reset(&mut self, doc_freq: u32, postings_data: OwnedBytes) -> io::Result<()> {
++    pub fn reset(&mut self, doc_freq: u32, postings_data: OwnedBytes) -> io::Result<()> {
+         let (skip_data_opt, postings_data) =
+             split_into_skips_and_postings(doc_freq, postings_data)?;
+         self.data = postings_data;
+@@ -207,7 +207,7 @@ impl BlockSegmentPostings {
+     ///
+     /// This method is useful to run SSE2 linear search.
+     #[inline]
+-    pub(crate) fn full_block(&self) -> &[DocId; COMPRESSION_BLOCK_SIZE] {
++    pub fn full_block(&self) -> &[DocId; COMPRESSION_BLOCK_SIZE] {
+         debug_assert!(self.block_is_loaded());
+         self.doc_decoder.full_output()
+     }
+@@ -252,7 +252,7 @@ impl BlockSegmentPostings {
+         self.load_block();
+     }
+ 
+-    pub(crate) fn position_offset(&self) -> u64 {
++    pub fn position_offset(&self) -> u64 {
+         self.skip_reader.position_offset()
+     }
+ 
+@@ -262,17 +262,17 @@ impl BlockSegmentPostings {
+     /// `.load_block()` needs to be called manually afterwards.
+     /// If all docs are smaller than target, the block loaded may be empty,
+     /// or be the last an incomplete VInt block.
+-    pub(crate) fn shallow_seek(&mut self, target_doc: DocId) {
++    pub fn shallow_seek(&mut self, target_doc: DocId) {
+         if self.skip_reader.seek(target_doc) {
+             self.block_max_score_cache = None;
+         }
+     }
+ 
+-    pub(crate) fn block_is_loaded(&self) -> bool {
++    pub fn block_is_loaded(&self) -> bool {
+         self.loaded_offset == self.skip_reader.byte_offset()
+     }
+ 
+-    pub(crate) fn load_block(&mut self) {
++    pub fn load_block(&mut self) {
+         let offset = self.skip_reader.byte_offset();
+         if self.loaded_offset == offset {
+             return;
+-- 
+2.46.0
+
+From 27e84627f48ae2c1f94dcf8e99f2c98913c31096 Mon Sep 17 00:00:00 2001
+From: Sujay Jayakar <sujayakar@convex.dev>
+Date: Wed, 1 May 2024 12:53:20 -0400
+Subject: [PATCH] Make block_cursor public
+
+---
+ src/postings/segment_postings.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/postings/segment_postings.rs b/src/postings/segment_postings.rs
+index 2b9ee8c5c..e5a541c6a 100644
+--- a/src/postings/segment_postings.rs
++++ b/src/postings/segment_postings.rs
+@@ -14,7 +14,7 @@ use crate::{DocId, TERMINATED};
+ /// Positions on the other hand, are optionally entirely decoded upfront.
+ #[derive(Clone)]
+ pub struct SegmentPostings {
+-    pub(crate) block_cursor: BlockSegmentPostings,
++    pub block_cursor: BlockSegmentPostings,
+     cur: usize,
+     position_reader: Option<PositionReader>,
+ }
+-- 
+2.46.0
+
+From 7dcecc5e68908c2fbce2ed5accb752b0476d4dc6 Mon Sep 17 00:00:00 2001
+From: Sujay Jayakar <sujayakar@convex.dev>
+Date: Wed, 1 May 2024 12:58:34 -0400
+Subject: [PATCH] Make term scorer public instead
+
+---
+ src/query/mod.rs                    | 2 +-
+ src/query/term_query/term_scorer.rs | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/query/mod.rs b/src/query/mod.rs
+index dd606693f..ed4653573 100644
+--- a/src/query/mod.rs
++++ b/src/query/mod.rs
+@@ -58,7 +58,7 @@ pub use self::score_combiner::{
+ };
+ pub use self::scorer::Scorer;
+ pub use self::set_query::TermSetQuery;
+-pub use self::term_query::TermQuery;
++pub use self::term_query::{TermQuery, TermScorer};
+ pub use self::union::Union;
+ #[cfg(test)]
+ pub use self::vec_docset::VecDocSet;
+diff --git a/src/query/term_query/term_scorer.rs b/src/query/term_query/term_scorer.rs
+index 007d27c03..02f87370b 100644
+--- a/src/query/term_query/term_scorer.rs
++++ b/src/query/term_query/term_scorer.rs
+@@ -25,7 +25,7 @@ impl TermScorer {
+         }
+     }
+ 
+-    pub(crate) fn shallow_seek(&mut self, target_doc: DocId) {
++    pub fn shallow_seek(&mut self, target_doc: DocId) {
+         self.postings.block_cursor.shallow_seek(target_doc);
+     }
+ 
+-- 
+2.46.0
+
+From b43821b8e53c55773fcf14c18d160f9dce6414e0 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Wed, 24 Apr 2024 14:37:11 -0700
+Subject: [PATCH] make SegmentWriter public
+
+---
+ src/indexer/mod.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/indexer/mod.rs b/src/indexer/mod.rs
+index 88861d0a4..87ca40f55 100644
+--- a/src/indexer/mod.rs
++++ b/src/indexer/mod.rs
+@@ -18,7 +18,7 @@ mod segment_manager;
+ mod segment_register;
+ pub mod segment_serializer;
+ pub mod segment_updater;
+-mod segment_writer;
++pub mod segment_writer;
+ mod sorted_doc_id_column;
+ mod sorted_doc_id_multivalue_column;
+ mod stamper;
+-- 
+2.46.0
+
+From a0f4d3c3843dd255ac6a7210830b3f91cf16db8f Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Wed, 24 Apr 2024 15:22:12 -0700
+Subject: [PATCH] expose DocId and single segment index writer
+
+---
+ src/core/mod.rs                         | 2 +-
+ src/core/single_segment_index_writer.rs | 8 +++++---
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/core/mod.rs b/src/core/mod.rs
+index 983e5c3b4..d6c87bce1 100644
+--- a/src/core/mod.rs
++++ b/src/core/mod.rs
+@@ -7,7 +7,7 @@ mod segment;
+ mod segment_component;
+ mod segment_id;
+ mod segment_reader;
+-mod single_segment_index_writer;
++pub mod single_segment_index_writer;
+ 
+ use std::path::Path;
+ 
+diff --git a/src/core/single_segment_index_writer.rs b/src/core/single_segment_index_writer.rs
+index d4651c721..eb53b5013 100644
+--- a/src/core/single_segment_index_writer.rs
++++ b/src/core/single_segment_index_writer.rs
+@@ -1,7 +1,7 @@
+ use crate::indexer::operation::AddOperation;
+ use crate::indexer::segment_updater::save_metas;
+ use crate::indexer::SegmentWriter;
+-use crate::{Directory, Document, Index, IndexMeta, Opstamp, Segment};
++use crate::{Directory, DocId, Document, Index, IndexMeta, Opstamp, Segment};
+ 
+ #[doc(hidden)]
+ pub struct SingleSegmentIndexWriter {
+@@ -25,11 +25,13 @@ impl SingleSegmentIndexWriter {
+         self.segment_writer.mem_usage()
+     }
+ 
+-    pub fn add_document(&mut self, document: Document) -> crate::Result<()> {
++    pub fn add_document(&mut self, document: Document) -> crate::Result<DocId> {
+         let opstamp = self.opstamp;
+         self.opstamp += 1;
++        let doc_id = self.segment_writer.max_doc();
+         self.segment_writer
+-            .add_document(AddOperation { opstamp, document })
++            .add_document(AddOperation { opstamp, document })?;
++        Ok(doc_id)
+     }
+ 
+     pub fn finalize(self) -> crate::Result<Index> {
+-- 
+2.46.0
+
+From b0bc7a40d54c92c8446098f20082756f218cdd9d Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Mon, 6 May 2024 17:05:48 -0700
+Subject: [PATCH] expose AliveBitSet::from_bitset
+
+---
+ src/fastfield/alive_bitset.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/fastfield/alive_bitset.rs b/src/fastfield/alive_bitset.rs
+index 0280cae0e..c54be0f0b 100644
+--- a/src/fastfield/alive_bitset.rs
++++ b/src/fastfield/alive_bitset.rs
+@@ -49,7 +49,7 @@ impl AliveBitSet {
+         Self::open(alive_bitset_bytes)
+     }
+ 
+-    pub(crate) fn from_bitset(bitset: &BitSet) -> AliveBitSet {
++    pub fn from_bitset(bitset: &BitSet) -> AliveBitSet {
+         let readonly_bitset = ReadOnlyBitSet::from(bitset);
+         AliveBitSet::from(readonly_bitset)
+     }
+-- 
+2.46.0
+
+From 3558a2828a851a84d31008d31e6ef22f35d6430a Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Thu, 9 May 2024 16:58:25 -0700
+Subject: [PATCH] expose SegmentDocIdMapping
+
+---
+ src/indexer/doc_id_mapping.rs  |  2 +-
+ src/indexer/merger.rs          |  4 ++--
+ src/indexer/segment_updater.rs | 16 +++++++++-------
+ 3 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/src/indexer/doc_id_mapping.rs b/src/indexer/doc_id_mapping.rs
+index e359bb2a2..90ae17083 100644
+--- a/src/indexer/doc_id_mapping.rs
++++ b/src/indexer/doc_id_mapping.rs
+@@ -9,7 +9,7 @@ use crate::{DocAddress, DocId, IndexSortByField, Order, TantivyError};
+ 
+ /// Struct to provide mapping from new doc_id to old doc_id and segment.
+ #[derive(Clone)]
+-pub(crate) struct SegmentDocIdMapping {
++pub struct SegmentDocIdMapping {
+     new_doc_id_to_old_doc_addr: Vec<DocAddress>,
+     is_trivial: bool,
+ }
+diff --git a/src/indexer/merger.rs b/src/indexer/merger.rs
+index da8828ff1..df5b7a180 100644
+--- a/src/indexer/merger.rs
++++ b/src/indexer/merger.rs
+@@ -1028,7 +1028,7 @@ impl IndexMerger {
+     ///
+     /// # Returns
+     /// The number of documents in the resulting segment.
+-    pub fn write(&self, mut serializer: SegmentSerializer) -> crate::Result<u32> {
++    pub fn write(&self, mut serializer: SegmentSerializer) -> crate::Result<(u32, SegmentDocIdMapping)> {
+         let doc_id_mapping = if let Some(sort_by_field) = self.index_settings.sort_by_field.as_ref()
+         {
+             // If the documents are already sorted and stackable, we ignore the mapping and execute
+@@ -1065,7 +1065,7 @@ impl IndexMerger {
+         self.write_storable_fields(serializer.get_store_writer(), &doc_id_mapping)?;
+         debug!("close-serializer");
+         serializer.close()?;
+-        Ok(self.max_doc)
++        Ok((self.max_doc, doc_id_mapping))
+     }
+ }
+ 
+diff --git a/src/indexer/segment_updater.rs b/src/indexer/segment_updater.rs
+index 1a74611b8..b474f6920 100644
+--- a/src/indexer/segment_updater.rs
++++ b/src/indexer/segment_updater.rs
+@@ -9,6 +9,7 @@ use std::sync::{Arc, RwLock};
+ use fail::fail_point;
+ use rayon::{ThreadPool, ThreadPoolBuilder};
+ 
++use super::doc_id_mapping::SegmentDocIdMapping;
+ use super::segment_manager::SegmentManager;
+ use crate::core::{
+     Index, IndexMeta, IndexSettings, Segment, SegmentId, SegmentMeta, META_FILEPATH,
+@@ -123,7 +124,7 @@ fn merge(
+     // ... we just serialize this index merger in our new segment to merge the segments.
+     let segment_serializer = SegmentSerializer::for_segment(merged_segment.clone(), true)?;
+ 
+-    let num_docs = merger.write(segment_serializer)?;
++    let (num_docs, _doc_id_mapping) = merger.write(segment_serializer)?;
+ 
+     let merged_segment_id = merged_segment.id();
+ 
+@@ -173,7 +174,8 @@ pub fn merge_indices<T: Into<Box<dyn Directory>>>(
+     }
+ 
+     let non_filter = segments.iter().map(|_| None).collect::<Vec<_>>();
+-    merge_filtered_segments(&segments, target_settings, non_filter, output_directory)
++    let (index, _) = merge_filtered_segments(&segments, target_settings, non_filter, output_directory)?;
++    Ok(index)
+ }
+ 
+ /// Advanced: Merges a list of segments from different indices in a new index.
+@@ -194,7 +196,7 @@ pub fn merge_filtered_segments<T: Into<Box<dyn Directory>>>(
+     target_settings: IndexSettings,
+     filter_doc_ids: Vec<Option<AliveBitSet>>,
+     output_directory: T,
+-) -> crate::Result<Index> {
++) -> crate::Result<(Index, SegmentDocIdMapping)> {
+     if segments.is_empty() {
+         // If there are no indices to merge, there is no need to do anything.
+         return Err(crate::TantivyError::InvalidArgument(
+@@ -229,7 +231,7 @@ pub fn merge_filtered_segments<T: Into<Box<dyn Directory>>>(
+         filter_doc_ids,
+     )?;
+     let segment_serializer = SegmentSerializer::for_segment(merged_segment, true)?;
+-    let num_docs = merger.write(segment_serializer)?;
++    let (num_docs, doc_id_mapping) = merger.write(segment_serializer)?;
+ 
+     let segment_meta = merged_index.new_segment_meta(merged_segment_id, num_docs);
+ 
+@@ -256,7 +258,7 @@ pub fn merge_filtered_segments<T: Into<Box<dyn Directory>>>(
+     // save the meta.json
+     save_metas(&index_meta, merged_index.directory_mut())?;
+ 
+-    Ok(merged_index)
++    Ok((merged_index, doc_id_mapping))
+ }
+ 
+ pub(crate) struct InnerSegmentUpdater {
+@@ -951,7 +953,7 @@ mod tests {
+ 
+         let filter_segments = vec![Some(filter_segment_1), Some(filter_segment_2)];
+ 
+-        let merged_index = merge_filtered_segments(
++        let (merged_index, _) = merge_filtered_segments(
+             &segments,
+             target_settings,
+             filter_segments,
+@@ -996,7 +998,7 @@ mod tests {
+ 
+         let filter_segments = vec![Some(filter_segment)];
+ 
+-        let index = merge_filtered_segments(
++        let (index, _) = merge_filtered_segments(
+             &segments,
+             target_settings,
+             filter_segments,
+-- 
+2.46.0
+
+From 8800511b263ef862e639797c414b532a809a6413 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Fri, 10 May 2024 13:57:46 -0700
+Subject: [PATCH] expose pub fn to iterate over SegmentDocIdMapping
+
+---
+ src/indexer/doc_id_mapping.rs | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/indexer/doc_id_mapping.rs b/src/indexer/doc_id_mapping.rs
+index 90ae17083..bfe935a9f 100644
+--- a/src/indexer/doc_id_mapping.rs
++++ b/src/indexer/doc_id_mapping.rs
+@@ -30,6 +30,10 @@ impl SegmentDocIdMapping {
+         self.new_doc_id_to_old_doc_addr.iter().copied()
+     }
+ 
++    pub fn iter_old_doc_addrs_enumerated(&self) -> impl Iterator<Item = (DocId, DocAddress)> + '_ {
++        self.new_doc_id_to_old_doc_addr.iter().enumerate().map(|(i, addr)| (i as DocId, *addr))
++    }
++
+     pub(crate) fn len(&self) -> usize {
+         self.new_doc_id_to_old_doc_addr.len()
+     }
+-- 
+2.46.0
+
+From 8800511b263ef862e639797c414b532a809a6413 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Fri, 10 May 2024 13:57:46 -0700
+Subject: [PATCH] expose pub fn to iterate over SegmentDocIdMapping
+
+---
+ src/indexer/doc_id_mapping.rs | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/indexer/doc_id_mapping.rs b/src/indexer/doc_id_mapping.rs
+index 90ae17083..bfe935a9f 100644
+--- a/src/indexer/doc_id_mapping.rs
++++ b/src/indexer/doc_id_mapping.rs
+@@ -30,6 +30,10 @@ impl SegmentDocIdMapping {
+         self.new_doc_id_to_old_doc_addr.iter().copied()
+     }
+ 
++    pub fn iter_old_doc_addrs_enumerated(&self) -> impl Iterator<Item = (DocId, DocAddress)> + '_ {
++        self.new_doc_id_to_old_doc_addr.iter().enumerate().map(|(i, addr)| (i as DocId, *addr))
++    }
++
+     pub(crate) fn len(&self) -> usize {
+         self.new_doc_id_to_old_doc_addr.len()
+     }
+-- 
+2.46.0
+
+From 67a6d35cc656b6bf522cfd565ade2f2249938764 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Fri, 10 May 2024 17:09:34 -0700
+Subject: [PATCH] make SegmentDocIdMapping len public
+
+---
+ src/indexer/doc_id_mapping.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/indexer/doc_id_mapping.rs b/src/indexer/doc_id_mapping.rs
+index bfe935a9f..29adc04dc 100644
+--- a/src/indexer/doc_id_mapping.rs
++++ b/src/indexer/doc_id_mapping.rs
+@@ -34,7 +34,7 @@ impl SegmentDocIdMapping {
+         self.new_doc_id_to_old_doc_addr.iter().enumerate().map(|(i, addr)| (i as DocId, *addr))
+     }
+ 
+-    pub(crate) fn len(&self) -> usize {
++    pub fn len(&self) -> usize {
+         self.new_doc_id_to_old_doc_addr.len()
+     }
+ 
+-- 
+2.46.0
+
+From 67a6d35cc656b6bf522cfd565ade2f2249938764 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Fri, 10 May 2024 17:09:34 -0700
+Subject: [PATCH] make SegmentDocIdMapping len public
+
+---
+ src/indexer/doc_id_mapping.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/indexer/doc_id_mapping.rs b/src/indexer/doc_id_mapping.rs
+index bfe935a9f..29adc04dc 100644
+--- a/src/indexer/doc_id_mapping.rs
++++ b/src/indexer/doc_id_mapping.rs
+@@ -34,7 +34,7 @@ impl SegmentDocIdMapping {
+         self.new_doc_id_to_old_doc_addr.iter().enumerate().map(|(i, addr)| (i as DocId, *addr))
+     }
+ 
+-    pub(crate) fn len(&self) -> usize {
++    pub fn len(&self) -> usize {
+         self.new_doc_id_to_old_doc_addr.len()
+     }
+ 
+-- 
+2.46.0
+
+From 0555a110eee1358a8b0895f1e6529d9f6817c880 Mon Sep 17 00:00:00 2001
+From: Sujay Jayakar <sujayakar@convex.dev>
+Date: Fri, 10 May 2024 10:46:57 -0400
+Subject: [PATCH] Generic bitset
+
+---
+ common/src/bitset.rs                      | 151 +++++++++++++---------
+ fastfield_codecs/src/null_index/sparse.rs |   4 +-
+ src/fastfield/alive_bitset.rs             |   8 +-
+ src/indexer/index_writer.rs               |  12 +-
+ src/indexer/segment_entry.rs              |   8 +-
+ src/query/automaton_weight.rs             |   4 +-
+ src/query/bitset/mod.rs                   |  30 ++---
+ src/query/range_query/range_query.rs      |   4 +-
+ 8 files changed, 126 insertions(+), 95 deletions(-)
+
+diff --git a/common/src/bitset.rs b/common/src/bitset.rs
+index 74d687f46..2c39a65ab 100644
+--- a/common/src/bitset.rs
++++ b/common/src/bitset.rs
+@@ -175,7 +175,7 @@ impl TinySet {
+ }
+ 
+ #[derive(Clone)]
+-pub struct BitSet {
++pub struct MutableBitSet {
+     tinysets: Box<[TinySet]>,
+     len: u64,
+     max_value: u32,
+@@ -185,7 +185,7 @@ fn num_buckets(max_val: u32) -> u32 {
+     (max_val + 63u32) / 64u32
+ }
+ 
+-impl BitSet {
++impl MutableBitSet {
+     /// serialize a `BitSet`.
+     pub fn serialize<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+         writer.write_all(self.max_value.to_le_bytes().as_ref())?;
+@@ -198,10 +198,10 @@ impl BitSet {
+ 
+     /// Create a new `BitSet` that may contain elements
+     /// within `[0, max_val)`.
+-    pub fn with_max_value(max_value: u32) -> BitSet {
++    pub fn with_max_value(max_value: u32) -> MutableBitSet {
+         let num_buckets = num_buckets(max_value);
+         let tinybitsets = vec![TinySet::empty(); num_buckets as usize].into_boxed_slice();
+-        BitSet {
++        MutableBitSet {
+             tinysets: tinybitsets,
+             len: 0,
+             max_value,
+@@ -210,7 +210,7 @@ impl BitSet {
+ 
+     /// Create a new `BitSet` that may contain elements. Initially all values will be set.
+     /// within `[0, max_val)`.
+-    pub fn with_max_value_and_full(max_value: u32) -> BitSet {
++    pub fn with_max_value_and_full(max_value: u32) -> MutableBitSet {
+         let num_buckets = num_buckets(max_value);
+         let mut tinybitsets = vec![TinySet::full(); num_buckets as usize].into_boxed_slice();
+ 
+@@ -219,7 +219,7 @@ impl BitSet {
+         if lower != 0 {
+             tinybitsets[tinybitsets.len() - 1] = TinySet::range_lower(lower);
+         }
+-        BitSet {
++        MutableBitSet {
+             tinysets: tinybitsets,
+             len: max_value as u64,
+             max_value,
+@@ -247,12 +247,6 @@ impl BitSet {
+         }
+     }
+ 
+-    /// Returns the number of elements in the `BitSet`.
+-    #[inline]
+-    pub fn len(&self) -> usize {
+-        self.len as usize
+-    }
+-
+     /// Inserts an element in the `BitSet`
+     #[inline]
+     pub fn insert(&mut self, el: u32) {
+@@ -276,31 +270,6 @@ impl BitSet {
+     pub fn contains(&self, el: u32) -> bool {
+         self.tinyset(el / 64u32).contains(el % 64)
+     }
+-
+-    /// Returns the first non-empty `TinySet` associated with a bucket lower
+-    /// or greater than bucket.
+-    ///
+-    /// Reminder: the tiny set with the bucket `bucket`, represents the
+-    /// elements from `bucket * 64` to `(bucket+1) * 64`.
+-    pub fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
+-        self.tinysets[bucket as usize..]
+-            .iter()
+-            .cloned()
+-            .position(|tinyset| !tinyset.is_empty())
+-            .map(|delta_bucket| bucket + delta_bucket as u32)
+-    }
+-
+-    #[inline]
+-    pub fn max_value(&self) -> u32 {
+-        self.max_value
+-    }
+-
+-    /// Returns the tiny bitset representing the
+-    /// the set restricted to the number range from
+-    /// `bucket * 64` to `(bucket + 1) * 64`.
+-    pub fn tinyset(&self, bucket: u32) -> TinySet {
+-        self.tinysets[bucket as usize]
+-    }
+ }
+ 
+ /// Serialized BitSet.
+@@ -335,14 +304,6 @@ impl ReadOnlyBitSet {
+         ReadOnlyBitSet { data, max_value }
+     }
+ 
+-    /// Number of elements in the bitset.
+-    #[inline]
+-    pub fn len(&self) -> usize {
+-        self.iter_tinysets()
+-            .map(|tinyset| tinyset.len() as usize)
+-            .sum()
+-    }
+-
+     /// Iterate the tinyset on the fly from serialized data.
+     #[inline]
+     fn iter_tinysets(&self) -> impl Iterator<Item = TinySet> + '_ {
+@@ -391,8 +352,8 @@ impl ReadOnlyBitSet {
+     }
+ }
+ 
+-impl<'a> From<&'a BitSet> for ReadOnlyBitSet {
+-    fn from(bitset: &'a BitSet) -> ReadOnlyBitSet {
++impl<'a> From<&'a MutableBitSet> for ReadOnlyBitSet {
++    fn from(bitset: &'a MutableBitSet) -> ReadOnlyBitSet {
+         let mut buffer = Vec::with_capacity(bitset.tinysets.len() * 8 + 4);
+         bitset
+             .serialize(&mut buffer)
+@@ -401,6 +362,76 @@ impl<'a> From<&'a BitSet> for ReadOnlyBitSet {
+     }
+ }
+ 
++pub trait BitSet: Send {
++    /// Returns the first non-empty `TinySet` associated with a bucket lower
++    /// or greater than bucket.
++    ///
++    /// Reminder: the tiny set with the bucket `bucket`, represents the
++    /// elements from `bucket * 64` to `(bucket+1) * 64`.
++    fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32>;
++
++    /// Returns the tiny bitset representing the
++    /// the set restricted to the number range from
++    /// `bucket * 64` to `(bucket + 1) * 64`.
++    fn tinyset(&self, bucket: u32) -> TinySet;
++
++    fn max_value(&self) -> u32;
++    fn len(&self) -> usize;
++}
++
++impl BitSet for MutableBitSet {
++    fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
++        self.tinysets[bucket as usize..]
++            .iter()
++            .cloned()
++            .position(|tinyset| !tinyset.is_empty())
++            .map(|delta_bucket| bucket + delta_bucket as u32)
++    }
++
++    #[inline]
++    fn max_value(&self) -> u32 {
++        self.max_value
++    }
++
++    fn tinyset(&self, bucket: u32) -> TinySet {
++        self.tinysets[bucket as usize]
++    }
++
++    /// Returns the number of elements in the `BitSet`.
++    #[inline]
++    fn len(&self) -> usize {
++        self.len as usize
++    }
++}
++
++impl BitSet for ReadOnlyBitSet {
++    fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
++        self.data[(bucket as usize * 8)..]
++            .chunks_exact(8)
++            .map(|c| TinySet::deserialize(c.try_into().unwrap()))
++            .position(|tinyset| !tinyset.is_empty())
++            .map(|delta_bucket| bucket + delta_bucket as u32)
++    }
++
++    #[inline]
++    fn max_value(&self) -> u32 {
++        self.max_value
++    }
++
++    fn tinyset(&self, bucket: u32) -> TinySet {
++        let byte_offset = bucket as usize * 8;
++        let chunk = self.data[byte_offset..byte_offset + 8].try_into().unwrap();
++        TinySet::deserialize(chunk)
++    }
++
++    #[inline]
++    fn len(&self) -> usize {
++        self.iter_tinysets()
++            .map(|tinyset| tinyset.len() as usize)
++            .sum()
++    }
++}
++
+ #[cfg(test)]
+ mod tests {
+ 
+@@ -411,12 +442,12 @@ mod tests {
+     use rand::rngs::StdRng;
+     use rand::{Rng, SeedableRng};
+ 
+-    use super::{BitSet, ReadOnlyBitSet, TinySet};
++    use super::{MutableBitSet, ReadOnlyBitSet, TinySet};
+ 
+     #[test]
+     fn test_read_serialized_bitset_full_multi() {
+         for i in 0..1000 {
+-            let bitset = BitSet::with_max_value_and_full(i);
++            let bitset = MutableBitSet::with_max_value_and_full(i);
+             let mut out = vec![];
+             bitset.serialize(&mut out).unwrap();
+ 
+@@ -427,7 +458,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_full_block() {
+-        let bitset = BitSet::with_max_value_and_full(64);
++        let bitset = MutableBitSet::with_max_value_and_full(64);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+ 
+@@ -437,7 +468,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_full() {
+-        let mut bitset = BitSet::with_max_value_and_full(5);
++        let mut bitset = MutableBitSet::with_max_value_and_full(5);
+         bitset.remove(3);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+@@ -449,7 +480,7 @@ mod tests {
+     #[test]
+     fn test_bitset_intersect() {
+         let bitset_serialized = {
+-            let mut bitset = BitSet::with_max_value_and_full(5);
++            let mut bitset = MutableBitSet::with_max_value_and_full(5);
+             bitset.remove(1);
+             bitset.remove(3);
+             let mut out = vec![];
+@@ -458,7 +489,7 @@ mod tests {
+             ReadOnlyBitSet::open(OwnedBytes::new(out))
+         };
+ 
+-        let mut bitset = BitSet::with_max_value_and_full(5);
++        let mut bitset = MutableBitSet::with_max_value_and_full(5);
+         bitset.remove(1);
+         bitset.intersect_update(&bitset_serialized);
+ 
+@@ -488,7 +519,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_empty() {
+-        let mut bitset = BitSet::with_max_value(5);
++        let mut bitset = MutableBitSet::with_max_value(5);
+         bitset.insert(3);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+@@ -497,7 +528,7 @@ mod tests {
+         assert_eq!(bitset.len(), 1);
+ 
+         {
+-            let bitset = BitSet::with_max_value(5);
++            let bitset = MutableBitSet::with_max_value(5);
+             let mut out = vec![];
+             bitset.serialize(&mut out).unwrap();
+             let bitset = ReadOnlyBitSet::open(OwnedBytes::new(out));
+@@ -574,7 +605,7 @@ mod tests {
+     fn test_bitset() {
+         let test_against_hashset = |els: &[u32], max_value: u32| {
+             let mut hashset: HashSet<u32> = HashSet::new();
+-            let mut bitset = BitSet::with_max_value(max_value);
++            let mut bitset = MutableBitSet::with_max_value(max_value);
+             for &el in els {
+                 assert!(el < max_value);
+                 hashset.insert(el);
+@@ -646,7 +677,7 @@ mod tests {
+ 
+     #[test]
+     fn test_bitset_len() {
+-        let mut bitset = BitSet::with_max_value(1_000);
++        let mut bitset = MutableBitSet::with_max_value(1_000);
+         assert_eq!(bitset.len(), 0);
+         bitset.insert(3u32);
+         assert_eq!(bitset.len(), 1);
+@@ -683,7 +714,7 @@ mod tests {
+ 
+     #[test]
+     fn test_bitset_clear() {
+-        let mut bitset = BitSet::with_max_value(1_000);
++        let mut bitset = MutableBitSet::with_max_value(1_000);
+         let els = sample(1_000, 0.01f64);
+         for &el in &els {
+             bitset.insert(el);
+@@ -701,7 +732,7 @@ mod bench {
+ 
+     use test;
+ 
+-    use super::{BitSet, TinySet};
++    use super::{MutableBitSet, TinySet};
+ 
+     #[bench]
+     fn bench_tinyset_pop(b: &mut test::Bencher) {
+@@ -732,6 +763,6 @@ mod bench {
+ 
+     #[bench]
+     fn bench_bitset_initialize(b: &mut test::Bencher) {
+-        b.iter(|| BitSet::with_max_value(1_000_000));
++        b.iter(|| MutableBitSet::with_max_value(1_000_000));
+     }
+ }
+diff --git a/fastfield_codecs/src/null_index/sparse.rs b/fastfield_codecs/src/null_index/sparse.rs
+index e9e69caa1..d3c83307e 100644
+--- a/fastfield_codecs/src/null_index/sparse.rs
++++ b/fastfield_codecs/src/null_index/sparse.rs
+@@ -1,6 +1,6 @@
+ use std::io::{self, Write};
+ 
+-use common::{BitSet, GroupByIteratorExtended, OwnedBytes};
++use common::{MutableBitSet, GroupByIteratorExtended, OwnedBytes};
+ 
+ use super::{serialize_dense_codec, DenseCodec};
+ 
+@@ -374,7 +374,7 @@ pub fn serialize_sparse_codec<W: Write>(
+                 out.write_all(val_in_block.to_le_bytes().as_ref())?;
+             }
+         } else {
+-            let mut bitset = BitSet::with_max_value(ELEMENTS_PER_BLOCK + 1);
++            let mut bitset = MutableBitSet::with_max_value(ELEMENTS_PER_BLOCK + 1);
+             for val_in_block in current_block.iter() {
+                 bitset.insert(*val_in_block as u32);
+             }
+diff --git a/src/fastfield/alive_bitset.rs b/src/fastfield/alive_bitset.rs
+index c54be0f0b..185a5717d 100644
+--- a/src/fastfield/alive_bitset.rs
++++ b/src/fastfield/alive_bitset.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::io::Write;
+ 
+-use common::{intersect_bitsets, BitSet, OwnedBytes, ReadOnlyBitSet};
++use common::{intersect_bitsets, MutableBitSet, OwnedBytes, ReadOnlyBitSet, BitSet};
+ 
+ use crate::space_usage::ByteCount;
+ use crate::DocId;
+@@ -11,7 +11,7 @@ use crate::DocId;
+ /// where `alive_bitset` is the set of alive `DocId`.
+ /// Warning: this function does not call terminate. The caller is in charge of
+ /// closing the writer properly.
+-pub fn write_alive_bitset<T: Write>(alive_bitset: &BitSet, writer: &mut T) -> io::Result<()> {
++pub fn write_alive_bitset<T: Write>(alive_bitset: &MutableBitSet, writer: &mut T) -> io::Result<()> {
+     alive_bitset.serialize(writer)?;
+     Ok(())
+ }
+@@ -39,7 +39,7 @@ impl AliveBitSet {
+     #[cfg(test)]
+     pub(crate) fn for_test_from_deleted_docs(deleted_docs: &[DocId], max_doc: u32) -> AliveBitSet {
+         assert!(deleted_docs.iter().all(|&doc| doc < max_doc));
+-        let mut bitset = BitSet::with_max_value_and_full(max_doc);
++        let mut bitset = MutableBitSet::with_max_value_and_full(max_doc);
+         for &doc in deleted_docs {
+             bitset.remove(doc);
+         }
+@@ -49,7 +49,7 @@ impl AliveBitSet {
+         Self::open(alive_bitset_bytes)
+     }
+ 
+-    pub fn from_bitset(bitset: &BitSet) -> AliveBitSet {
++    pub fn from_bitset(bitset: &MutableBitSet) -> AliveBitSet {
+         let readonly_bitset = ReadOnlyBitSet::from(bitset);
+         AliveBitSet::from(readonly_bitset)
+     }
+diff --git a/src/indexer/index_writer.rs b/src/indexer/index_writer.rs
+index abe97d58a..b8eddcd6d 100644
+--- a/src/indexer/index_writer.rs
++++ b/src/indexer/index_writer.rs
+@@ -3,7 +3,7 @@ use std::sync::Arc;
+ use std::thread;
+ use std::thread::JoinHandle;
+ 
+-use common::BitSet;
++use common::{MutableBitSet, BitSet};
+ use smallvec::smallvec;
+ 
+ use super::operation::{AddOperation, UserOperation};
+@@ -78,7 +78,7 @@ pub struct IndexWriter {
+ }
+ 
+ fn compute_deleted_bitset(
+-    alive_bitset: &mut BitSet,
++    alive_bitset: &mut MutableBitSet,
+     segment_reader: &SegmentReader,
+     delete_cursor: &mut DeleteCursor,
+     doc_opstamps: &DocToOpstampMapping,
+@@ -129,9 +129,9 @@ pub(crate) fn advance_deletes(
+     let segment_reader = SegmentReader::open(&segment)?;
+ 
+     let max_doc = segment_reader.max_doc();
+-    let mut alive_bitset: BitSet = match segment_entry.alive_bitset() {
++    let mut alive_bitset: MutableBitSet = match segment_entry.alive_bitset() {
+         Some(previous_alive_bitset) => (*previous_alive_bitset).clone(),
+-        None => BitSet::with_max_value_and_full(max_doc),
++        None => MutableBitSet::with_max_value_and_full(max_doc),
+     };
+ 
+     let num_deleted_docs_before = segment.meta().num_deleted_docs();
+@@ -213,7 +213,7 @@ fn apply_deletes(
+     segment: &Segment,
+     delete_cursor: &mut DeleteCursor,
+     doc_opstamps: &[Opstamp],
+-) -> crate::Result<Option<BitSet>> {
++) -> crate::Result<Option<MutableBitSet>> {
+     if delete_cursor.get().is_none() {
+         // if there are no delete operation in the queue, no need
+         // to even open the segment.
+@@ -230,7 +230,7 @@ fn apply_deletes(
+     let doc_to_opstamps = DocToOpstampMapping::WithMap(doc_opstamps);
+ 
+     let max_doc = segment.meta().max_doc();
+-    let mut deleted_bitset = BitSet::with_max_value_and_full(max_doc);
++    let mut deleted_bitset = MutableBitSet::with_max_value_and_full(max_doc);
+     let may_have_deletes = compute_deleted_bitset(
+         &mut deleted_bitset,
+         &segment_reader,
+diff --git a/src/indexer/segment_entry.rs b/src/indexer/segment_entry.rs
+index 0e5002338..cb1de40ac 100644
+--- a/src/indexer/segment_entry.rs
++++ b/src/indexer/segment_entry.rs
+@@ -1,6 +1,6 @@
+ use std::fmt;
+ 
+-use common::BitSet;
++use common::MutableBitSet;
+ 
+ use crate::core::{SegmentId, SegmentMeta};
+ use crate::indexer::delete_queue::DeleteCursor;
+@@ -19,7 +19,7 @@ use crate::indexer::delete_queue::DeleteCursor;
+ #[derive(Clone)]
+ pub struct SegmentEntry {
+     meta: SegmentMeta,
+-    alive_bitset: Option<BitSet>,
++    alive_bitset: Option<MutableBitSet>,
+     delete_cursor: DeleteCursor,
+ }
+ 
+@@ -28,7 +28,7 @@ impl SegmentEntry {
+     pub fn new(
+         segment_meta: SegmentMeta,
+         delete_cursor: DeleteCursor,
+-        alive_bitset: Option<BitSet>,
++        alive_bitset: Option<MutableBitSet>,
+     ) -> SegmentEntry {
+         SegmentEntry {
+             meta: segment_meta,
+@@ -40,7 +40,7 @@ impl SegmentEntry {
+     /// Return a reference to the segment entry deleted bitset.
+     ///
+     /// `DocId` in this bitset are flagged as deleted.
+-    pub fn alive_bitset(&self) -> Option<&BitSet> {
++    pub fn alive_bitset(&self) -> Option<&MutableBitSet> {
+         self.alive_bitset.as_ref()
+     }
+ 
+diff --git a/src/query/automaton_weight.rs b/src/query/automaton_weight.rs
+index e9375e96c..4bfad646a 100644
+--- a/src/query/automaton_weight.rs
++++ b/src/query/automaton_weight.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::sync::Arc;
+ 
+-use common::BitSet;
++use common::MutableBitSet;
+ use tantivy_fst::Automaton;
+ 
+ use crate::core::SegmentReader;
+@@ -46,7 +46,7 @@ where
+ {
+     fn scorer(&self, reader: &SegmentReader, boost: Score) -> crate::Result<Box<dyn Scorer>> {
+         let max_doc = reader.max_doc();
+-        let mut doc_bitset = BitSet::with_max_value(max_doc);
++        let mut doc_bitset = MutableBitSet::with_max_value(max_doc);
+         let inverted_index = reader.inverted_index(self.field)?;
+         let term_dict = inverted_index.terms();
+         let mut term_stream = self.automaton_stream(term_dict)?;
+diff --git a/src/query/bitset/mod.rs b/src/query/bitset/mod.rs
+index c1d4ed28c..999abd34f 100644
+--- a/src/query/bitset/mod.rs
++++ b/src/query/bitset/mod.rs
+@@ -1,4 +1,4 @@
+-use common::{BitSet, TinySet};
++use common::{BitSet, MutableBitSet, TinySet};
+ 
+ use crate::docset::{DocSet, TERMINATED};
+ use crate::DocId;
+@@ -12,22 +12,22 @@ use crate::DocId;
+ ///
+ /// TODO: Consider implementing a `BitTreeSet` in order to advance faster
+ /// when the bitset is sparse
+-pub struct BitSetDocSet {
+-    docs: BitSet,
++pub struct BitSetDocSet<T: BitSet = MutableBitSet> {
++    docs: T,
+     cursor_bucket: u32, //< index associated with the current tiny bitset
+     cursor_tinybitset: TinySet,
+     doc: u32,
+ }
+ 
+-impl BitSetDocSet {
++impl<T: BitSet> BitSetDocSet<T> {
+     fn go_to_bucket(&mut self, bucket_addr: u32) {
+         self.cursor_bucket = bucket_addr;
+         self.cursor_tinybitset = self.docs.tinyset(bucket_addr);
+     }
+ }
+ 
+-impl From<BitSet> for BitSetDocSet {
+-    fn from(docs: BitSet) -> BitSetDocSet {
++impl<T: BitSet> From<T> for BitSetDocSet<T> {
++    fn from(docs: T) -> BitSetDocSet<T> {
+         let first_tiny_bitset = if docs.max_value() == 0 {
+             TinySet::empty()
+         } else {
+@@ -44,7 +44,7 @@ impl From<BitSet> for BitSetDocSet {
+     }
+ }
+ 
+-impl DocSet for BitSetDocSet {
++impl<T: BitSet> DocSet for BitSetDocSet<T> {
+     fn advance(&mut self) -> DocId {
+         if let Some(lower) = self.cursor_tinybitset.pop_lowest() {
+             self.doc = (self.cursor_bucket * 64u32) | lower;
+@@ -96,7 +96,7 @@ impl DocSet for BitSetDocSet {
+ mod tests {
+     use std::collections::BTreeSet;
+ 
+-    use common::BitSet;
++    use common::MutableBitSet;
+ 
+     use super::BitSetDocSet;
+     use crate::docset::{DocSet, TERMINATED};
+@@ -104,7 +104,7 @@ mod tests {
+     use crate::DocId;
+ 
+     fn create_docbitset(docs: &[DocId], max_doc: DocId) -> BitSetDocSet {
+-        let mut docset = BitSet::with_max_value(max_doc);
++        let mut docset = MutableBitSet::with_max_value(max_doc);
+         for &doc in docs {
+             docset.insert(doc);
+         }
+@@ -115,7 +115,7 @@ mod tests {
+     fn test_bitset_large() {
+         let arr = generate_nonunique_unsorted(100_000, 5_000);
+         let mut btreeset: BTreeSet<u32> = BTreeSet::new();
+-        let mut bitset = BitSet::with_max_value(100_000);
++        let mut bitset = MutableBitSet::with_max_value(100_000);
+         for el in arr {
+             btreeset.insert(el);
+             bitset.insert(el);
+@@ -136,14 +136,14 @@ mod tests {
+ 
+     #[test]
+     fn test_empty() {
+-        let bitset = BitSet::with_max_value(1000);
++        let bitset = MutableBitSet::with_max_value(1000);
+         let mut empty = BitSetDocSet::from(bitset);
+         assert_eq!(empty.advance(), TERMINATED)
+     }
+ 
+     #[test]
+     fn test_seek_terminated() {
+-        let bitset = BitSet::with_max_value(1000);
++        let bitset = MutableBitSet::with_max_value(1000);
+         let mut empty = BitSetDocSet::from(bitset);
+         assert_eq!(empty.seek(TERMINATED), TERMINATED)
+     }
+@@ -242,7 +242,7 @@ mod bench {
+     fn bench_bitset_1pct_insert(b: &mut test::Bencher) {
+         let els = tests::generate_nonunique_unsorted(1_000_000u32, 10_000);
+         b.iter(|| {
+-            let mut bitset = BitSet::with_max_value(1_000_000);
++            let mut bitset = MutableBitSet::with_max_value(1_000_000);
+             for el in els.iter().cloned() {
+                 bitset.insert(el);
+             }
+@@ -252,7 +252,7 @@ mod bench {
+     #[bench]
+     fn bench_bitset_1pct_clone(b: &mut test::Bencher) {
+         let els = tests::generate_nonunique_unsorted(1_000_000u32, 10_000);
+-        let mut bitset = BitSet::with_max_value(1_000_000);
++        let mut bitset = MutableBitSet::with_max_value(1_000_000);
+         for el in els {
+             bitset.insert(el);
+         }
+@@ -262,7 +262,7 @@ mod bench {
+     #[bench]
+     fn bench_bitset_1pct_clone_iterate(b: &mut test::Bencher) {
+         let els = tests::sample(1_000_000u32, 0.01);
+-        let mut bitset = BitSet::with_max_value(1_000_000);
++        let mut bitset = MutableBitSet::with_max_value(1_000_000);
+         for el in els {
+             bitset.insert(el);
+         }
+diff --git a/src/query/range_query/range_query.rs b/src/query/range_query/range_query.rs
+index 727f5ea8a..23b049c53 100644
+--- a/src/query/range_query/range_query.rs
++++ b/src/query/range_query/range_query.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::ops::{Bound, Range};
+ 
+-use common::{BinarySerializable, BitSet};
++use common::{BinarySerializable, MutableBitSet};
+ 
+ use super::range_query_u64_fastfield::FastFieldRangeWeight;
+ use crate::core::SegmentReader;
+@@ -377,7 +377,7 @@ impl RangeWeight {
+ impl Weight for RangeWeight {
+     fn scorer(&self, reader: &SegmentReader, boost: Score) -> crate::Result<Box<dyn Scorer>> {
+         let max_doc = reader.max_doc();
+-        let mut doc_bitset = BitSet::with_max_value(max_doc);
++        let mut doc_bitset = MutableBitSet::with_max_value(max_doc);
+ 
+         let inverted_index = reader.inverted_index(reader.schema().get_field(&self.field)?)?;
+         let term_dict = inverted_index.terms();
+-- 
+2.46.0
+
+From 3f33bfefce4291f7f805a6e7fadec24f911cdd62 Mon Sep 17 00:00:00 2001
+From: Sujay Jayakar <sujayakar@convex.dev>
+Date: Mon, 13 May 2024 11:57:38 -0400
+Subject: [PATCH] revert naming
+
+---
+ common/src/bitset.rs                      | 110 ++++++++++++++--------
+ fastfield_codecs/src/null_index/sparse.rs |   4 +-
+ src/fastfield/alive_bitset.rs             |   8 +-
+ src/indexer/index_writer.rs               |  12 +--
+ src/indexer/segment_entry.rs              |   8 +-
+ src/query/automaton_weight.rs             |   4 +-
+ src/query/bitset/mod.rs                   |  26 ++---
+ src/query/range_query/range_query.rs      |   4 +-
+ 8 files changed, 104 insertions(+), 72 deletions(-)
+
+diff --git a/common/src/bitset.rs b/common/src/bitset.rs
+index 2c39a65ab..f05b78252 100644
+--- a/common/src/bitset.rs
++++ b/common/src/bitset.rs
+@@ -175,7 +175,7 @@ impl TinySet {
+ }
+ 
+ #[derive(Clone)]
+-pub struct MutableBitSet {
++pub struct BitSet {
+     tinysets: Box<[TinySet]>,
+     len: u64,
+     max_value: u32,
+@@ -185,7 +185,7 @@ fn num_buckets(max_val: u32) -> u32 {
+     (max_val + 63u32) / 64u32
+ }
+ 
+-impl MutableBitSet {
++impl BitSet {
+     /// serialize a `BitSet`.
+     pub fn serialize<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+         writer.write_all(self.max_value.to_le_bytes().as_ref())?;
+@@ -198,10 +198,10 @@ impl MutableBitSet {
+ 
+     /// Create a new `BitSet` that may contain elements
+     /// within `[0, max_val)`.
+-    pub fn with_max_value(max_value: u32) -> MutableBitSet {
++    pub fn with_max_value(max_value: u32) -> BitSet {
+         let num_buckets = num_buckets(max_value);
+         let tinybitsets = vec![TinySet::empty(); num_buckets as usize].into_boxed_slice();
+-        MutableBitSet {
++        BitSet {
+             tinysets: tinybitsets,
+             len: 0,
+             max_value,
+@@ -210,7 +210,7 @@ impl MutableBitSet {
+ 
+     /// Create a new `BitSet` that may contain elements. Initially all values will be set.
+     /// within `[0, max_val)`.
+-    pub fn with_max_value_and_full(max_value: u32) -> MutableBitSet {
++    pub fn with_max_value_and_full(max_value: u32) -> BitSet {
+         let num_buckets = num_buckets(max_value);
+         let mut tinybitsets = vec![TinySet::full(); num_buckets as usize].into_boxed_slice();
+ 
+@@ -219,7 +219,7 @@ impl MutableBitSet {
+         if lower != 0 {
+             tinybitsets[tinybitsets.len() - 1] = TinySet::range_lower(lower);
+         }
+-        MutableBitSet {
++        BitSet {
+             tinysets: tinybitsets,
+             len: max_value as u64,
+             max_value,
+@@ -247,6 +247,12 @@ impl MutableBitSet {
+         }
+     }
+ 
++    /// Returns the number of elements in the `BitSet`.
++    #[inline]
++    pub fn len(&self) -> usize {
++        self.len as usize
++    }
++
+     /// Inserts an element in the `BitSet`
+     #[inline]
+     pub fn insert(&mut self, el: u32) {
+@@ -270,6 +276,31 @@ impl MutableBitSet {
+     pub fn contains(&self, el: u32) -> bool {
+         self.tinyset(el / 64u32).contains(el % 64)
+     }
++
++    /// Returns the first non-empty `TinySet` associated with a bucket lower
++    /// or greater than bucket.
++    ///
++    /// Reminder: the tiny set with the bucket `bucket`, represents the
++    /// elements from `bucket * 64` to `(bucket+1) * 64`.
++    pub fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
++        self.tinysets[bucket as usize..]
++            .iter()
++            .cloned()
++            .position(|tinyset| !tinyset.is_empty())
++            .map(|delta_bucket| bucket + delta_bucket as u32)
++    }
++
++    #[inline]
++    pub fn max_value(&self) -> u32 {
++        self.max_value
++    }
++
++    /// Returns the tiny bitset representing the
++    /// the set restricted to the number range from
++    /// `bucket * 64` to `(bucket + 1) * 64`.
++    pub fn tinyset(&self, bucket: u32) -> TinySet {
++        self.tinysets[bucket as usize]
++    }
+ }
+ 
+ /// Serialized BitSet.
+@@ -304,6 +335,14 @@ impl ReadOnlyBitSet {
+         ReadOnlyBitSet { data, max_value }
+     }
+ 
++    /// Number of elements in the bitset.
++    #[inline]
++    pub fn len(&self) -> usize {
++        self.iter_tinysets()
++            .map(|tinyset| tinyset.len() as usize)
++            .sum()
++    }
++
+     /// Iterate the tinyset on the fly from serialized data.
+     #[inline]
+     fn iter_tinysets(&self) -> impl Iterator<Item = TinySet> + '_ {
+@@ -352,8 +391,8 @@ impl ReadOnlyBitSet {
+     }
+ }
+ 
+-impl<'a> From<&'a MutableBitSet> for ReadOnlyBitSet {
+-    fn from(bitset: &'a MutableBitSet) -> ReadOnlyBitSet {
++impl<'a> From<&'a BitSet> for ReadOnlyBitSet {
++    fn from(bitset: &'a BitSet) -> ReadOnlyBitSet {
+         let mut buffer = Vec::with_capacity(bitset.tinysets.len() * 8 + 4);
+         bitset
+             .serialize(&mut buffer)
+@@ -362,49 +401,43 @@ impl<'a> From<&'a MutableBitSet> for ReadOnlyBitSet {
+     }
+ }
+ 
+-pub trait BitSet: Send {
++pub trait GenericBitSet: Send {
+     /// Returns the first non-empty `TinySet` associated with a bucket lower
+     /// or greater than bucket.
+     ///
+     /// Reminder: the tiny set with the bucket `bucket`, represents the
+     /// elements from `bucket * 64` to `(bucket+1) * 64`.
+     fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32>;
+-
+-    /// Returns the tiny bitset representing the
+-    /// the set restricted to the number range from
+-    /// `bucket * 64` to `(bucket + 1) * 64`.
+     fn tinyset(&self, bucket: u32) -> TinySet;
+ 
+     fn max_value(&self) -> u32;
+     fn len(&self) -> usize;
+ }
+ 
+-impl BitSet for MutableBitSet {
++impl GenericBitSet for BitSet {
++    #[inline]
+     fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
+-        self.tinysets[bucket as usize..]
+-            .iter()
+-            .cloned()
+-            .position(|tinyset| !tinyset.is_empty())
+-            .map(|delta_bucket| bucket + delta_bucket as u32)
++        BitSet::first_non_empty_bucket(self, bucket)
+     }
+ 
+     #[inline]
+     fn max_value(&self) -> u32 {
+-        self.max_value
++        BitSet::max_value(self)
+     }
+ 
++    #[inline]
+     fn tinyset(&self, bucket: u32) -> TinySet {
+-        self.tinysets[bucket as usize]
++        BitSet::tinyset(self, bucket)
+     }
+ 
+     /// Returns the number of elements in the `BitSet`.
+     #[inline]
+     fn len(&self) -> usize {
+-        self.len as usize
++        BitSet::len(self)
+     }
+ }
+ 
+-impl BitSet for ReadOnlyBitSet {
++impl GenericBitSet for ReadOnlyBitSet {
+     fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
+         self.data[(bucket as usize * 8)..]
+             .chunks_exact(8)
+@@ -418,6 +451,7 @@ impl BitSet for ReadOnlyBitSet {
+         self.max_value
+     }
+ 
++    #[inline]
+     fn tinyset(&self, bucket: u32) -> TinySet {
+         let byte_offset = bucket as usize * 8;
+         let chunk = self.data[byte_offset..byte_offset + 8].try_into().unwrap();
+@@ -426,9 +460,7 @@ impl BitSet for ReadOnlyBitSet {
+ 
+     #[inline]
+     fn len(&self) -> usize {
+-        self.iter_tinysets()
+-            .map(|tinyset| tinyset.len() as usize)
+-            .sum()
++        ReadOnlyBitSet::len(self)
+     }
+ }
+ 
+@@ -442,12 +474,12 @@ mod tests {
+     use rand::rngs::StdRng;
+     use rand::{Rng, SeedableRng};
+ 
+-    use super::{MutableBitSet, ReadOnlyBitSet, TinySet};
++    use super::{BitSet, ReadOnlyBitSet, TinySet};
+ 
+     #[test]
+     fn test_read_serialized_bitset_full_multi() {
+         for i in 0..1000 {
+-            let bitset = MutableBitSet::with_max_value_and_full(i);
++            let bitset = BitSet::with_max_value_and_full(i);
+             let mut out = vec![];
+             bitset.serialize(&mut out).unwrap();
+ 
+@@ -458,7 +490,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_full_block() {
+-        let bitset = MutableBitSet::with_max_value_and_full(64);
++        let bitset = BitSet::with_max_value_and_full(64);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+ 
+@@ -468,7 +500,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_full() {
+-        let mut bitset = MutableBitSet::with_max_value_and_full(5);
++        let mut bitset = BitSet::with_max_value_and_full(5);
+         bitset.remove(3);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+@@ -480,7 +512,7 @@ mod tests {
+     #[test]
+     fn test_bitset_intersect() {
+         let bitset_serialized = {
+-            let mut bitset = MutableBitSet::with_max_value_and_full(5);
++            let mut bitset = BitSet::with_max_value_and_full(5);
+             bitset.remove(1);
+             bitset.remove(3);
+             let mut out = vec![];
+@@ -489,7 +521,7 @@ mod tests {
+             ReadOnlyBitSet::open(OwnedBytes::new(out))
+         };
+ 
+-        let mut bitset = MutableBitSet::with_max_value_and_full(5);
++        let mut bitset = BitSet::with_max_value_and_full(5);
+         bitset.remove(1);
+         bitset.intersect_update(&bitset_serialized);
+ 
+@@ -519,7 +551,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_empty() {
+-        let mut bitset = MutableBitSet::with_max_value(5);
++        let mut bitset = BitSet::with_max_value(5);
+         bitset.insert(3);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+@@ -528,7 +560,7 @@ mod tests {
+         assert_eq!(bitset.len(), 1);
+ 
+         {
+-            let bitset = MutableBitSet::with_max_value(5);
++            let bitset = BitSet::with_max_value(5);
+             let mut out = vec![];
+             bitset.serialize(&mut out).unwrap();
+             let bitset = ReadOnlyBitSet::open(OwnedBytes::new(out));
+@@ -605,7 +637,7 @@ mod tests {
+     fn test_bitset() {
+         let test_against_hashset = |els: &[u32], max_value: u32| {
+             let mut hashset: HashSet<u32> = HashSet::new();
+-            let mut bitset = MutableBitSet::with_max_value(max_value);
++            let mut bitset = BitSet::with_max_value(max_value);
+             for &el in els {
+                 assert!(el < max_value);
+                 hashset.insert(el);
+@@ -677,7 +709,7 @@ mod tests {
+ 
+     #[test]
+     fn test_bitset_len() {
+-        let mut bitset = MutableBitSet::with_max_value(1_000);
++        let mut bitset = BitSet::with_max_value(1_000);
+         assert_eq!(bitset.len(), 0);
+         bitset.insert(3u32);
+         assert_eq!(bitset.len(), 1);
+@@ -714,7 +746,7 @@ mod tests {
+ 
+     #[test]
+     fn test_bitset_clear() {
+-        let mut bitset = MutableBitSet::with_max_value(1_000);
++        let mut bitset = BitSet::with_max_value(1_000);
+         let els = sample(1_000, 0.01f64);
+         for &el in &els {
+             bitset.insert(el);
+@@ -732,7 +764,7 @@ mod bench {
+ 
+     use test;
+ 
+-    use super::{MutableBitSet, TinySet};
++    use super::{BitSet, TinySet};
+ 
+     #[bench]
+     fn bench_tinyset_pop(b: &mut test::Bencher) {
+@@ -763,6 +795,6 @@ mod bench {
+ 
+     #[bench]
+     fn bench_bitset_initialize(b: &mut test::Bencher) {
+-        b.iter(|| MutableBitSet::with_max_value(1_000_000));
++        b.iter(|| BitSet::with_max_value(1_000_000));
+     }
+ }
+diff --git a/fastfield_codecs/src/null_index/sparse.rs b/fastfield_codecs/src/null_index/sparse.rs
+index d3c83307e..e9e69caa1 100644
+--- a/fastfield_codecs/src/null_index/sparse.rs
++++ b/fastfield_codecs/src/null_index/sparse.rs
+@@ -1,6 +1,6 @@
+ use std::io::{self, Write};
+ 
+-use common::{MutableBitSet, GroupByIteratorExtended, OwnedBytes};
++use common::{BitSet, GroupByIteratorExtended, OwnedBytes};
+ 
+ use super::{serialize_dense_codec, DenseCodec};
+ 
+@@ -374,7 +374,7 @@ pub fn serialize_sparse_codec<W: Write>(
+                 out.write_all(val_in_block.to_le_bytes().as_ref())?;
+             }
+         } else {
+-            let mut bitset = MutableBitSet::with_max_value(ELEMENTS_PER_BLOCK + 1);
++            let mut bitset = BitSet::with_max_value(ELEMENTS_PER_BLOCK + 1);
+             for val_in_block in current_block.iter() {
+                 bitset.insert(*val_in_block as u32);
+             }
+diff --git a/src/fastfield/alive_bitset.rs b/src/fastfield/alive_bitset.rs
+index 185a5717d..92337207b 100644
+--- a/src/fastfield/alive_bitset.rs
++++ b/src/fastfield/alive_bitset.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::io::Write;
+ 
+-use common::{intersect_bitsets, MutableBitSet, OwnedBytes, ReadOnlyBitSet, BitSet};
++use common::{intersect_bitsets, BitSet, OwnedBytes, ReadOnlyBitSet, GenericBitSet};
+ 
+ use crate::space_usage::ByteCount;
+ use crate::DocId;
+@@ -11,7 +11,7 @@ use crate::DocId;
+ /// where `alive_bitset` is the set of alive `DocId`.
+ /// Warning: this function does not call terminate. The caller is in charge of
+ /// closing the writer properly.
+-pub fn write_alive_bitset<T: Write>(alive_bitset: &MutableBitSet, writer: &mut T) -> io::Result<()> {
++pub fn write_alive_bitset<T: Write>(alive_bitset: &BitSet, writer: &mut T) -> io::Result<()> {
+     alive_bitset.serialize(writer)?;
+     Ok(())
+ }
+@@ -39,7 +39,7 @@ impl AliveBitSet {
+     #[cfg(test)]
+     pub(crate) fn for_test_from_deleted_docs(deleted_docs: &[DocId], max_doc: u32) -> AliveBitSet {
+         assert!(deleted_docs.iter().all(|&doc| doc < max_doc));
+-        let mut bitset = MutableBitSet::with_max_value_and_full(max_doc);
++        let mut bitset = BitSet::with_max_value_and_full(max_doc);
+         for &doc in deleted_docs {
+             bitset.remove(doc);
+         }
+@@ -49,7 +49,7 @@ impl AliveBitSet {
+         Self::open(alive_bitset_bytes)
+     }
+ 
+-    pub fn from_bitset(bitset: &MutableBitSet) -> AliveBitSet {
++    pub fn from_bitset(bitset: &BitSet) -> AliveBitSet {
+         let readonly_bitset = ReadOnlyBitSet::from(bitset);
+         AliveBitSet::from(readonly_bitset)
+     }
+diff --git a/src/indexer/index_writer.rs b/src/indexer/index_writer.rs
+index b8eddcd6d..c11fbbfc2 100644
+--- a/src/indexer/index_writer.rs
++++ b/src/indexer/index_writer.rs
+@@ -3,7 +3,7 @@ use std::sync::Arc;
+ use std::thread;
+ use std::thread::JoinHandle;
+ 
+-use common::{MutableBitSet, BitSet};
++use common::{BitSet, GenericBitSet};
+ use smallvec::smallvec;
+ 
+ use super::operation::{AddOperation, UserOperation};
+@@ -78,7 +78,7 @@ pub struct IndexWriter {
+ }
+ 
+ fn compute_deleted_bitset(
+-    alive_bitset: &mut MutableBitSet,
++    alive_bitset: &mut BitSet,
+     segment_reader: &SegmentReader,
+     delete_cursor: &mut DeleteCursor,
+     doc_opstamps: &DocToOpstampMapping,
+@@ -129,9 +129,9 @@ pub(crate) fn advance_deletes(
+     let segment_reader = SegmentReader::open(&segment)?;
+ 
+     let max_doc = segment_reader.max_doc();
+-    let mut alive_bitset: MutableBitSet = match segment_entry.alive_bitset() {
++    let mut alive_bitset: BitSet = match segment_entry.alive_bitset() {
+         Some(previous_alive_bitset) => (*previous_alive_bitset).clone(),
+-        None => MutableBitSet::with_max_value_and_full(max_doc),
++        None => BitSet::with_max_value_and_full(max_doc),
+     };
+ 
+     let num_deleted_docs_before = segment.meta().num_deleted_docs();
+@@ -213,7 +213,7 @@ fn apply_deletes(
+     segment: &Segment,
+     delete_cursor: &mut DeleteCursor,
+     doc_opstamps: &[Opstamp],
+-) -> crate::Result<Option<MutableBitSet>> {
++) -> crate::Result<Option<BitSet>> {
+     if delete_cursor.get().is_none() {
+         // if there are no delete operation in the queue, no need
+         // to even open the segment.
+@@ -230,7 +230,7 @@ fn apply_deletes(
+     let doc_to_opstamps = DocToOpstampMapping::WithMap(doc_opstamps);
+ 
+     let max_doc = segment.meta().max_doc();
+-    let mut deleted_bitset = MutableBitSet::with_max_value_and_full(max_doc);
++    let mut deleted_bitset = BitSet::with_max_value_and_full(max_doc);
+     let may_have_deletes = compute_deleted_bitset(
+         &mut deleted_bitset,
+         &segment_reader,
+diff --git a/src/indexer/segment_entry.rs b/src/indexer/segment_entry.rs
+index cb1de40ac..0e5002338 100644
+--- a/src/indexer/segment_entry.rs
++++ b/src/indexer/segment_entry.rs
+@@ -1,6 +1,6 @@
+ use std::fmt;
+ 
+-use common::MutableBitSet;
++use common::BitSet;
+ 
+ use crate::core::{SegmentId, SegmentMeta};
+ use crate::indexer::delete_queue::DeleteCursor;
+@@ -19,7 +19,7 @@ use crate::indexer::delete_queue::DeleteCursor;
+ #[derive(Clone)]
+ pub struct SegmentEntry {
+     meta: SegmentMeta,
+-    alive_bitset: Option<MutableBitSet>,
++    alive_bitset: Option<BitSet>,
+     delete_cursor: DeleteCursor,
+ }
+ 
+@@ -28,7 +28,7 @@ impl SegmentEntry {
+     pub fn new(
+         segment_meta: SegmentMeta,
+         delete_cursor: DeleteCursor,
+-        alive_bitset: Option<MutableBitSet>,
++        alive_bitset: Option<BitSet>,
+     ) -> SegmentEntry {
+         SegmentEntry {
+             meta: segment_meta,
+@@ -40,7 +40,7 @@ impl SegmentEntry {
+     /// Return a reference to the segment entry deleted bitset.
+     ///
+     /// `DocId` in this bitset are flagged as deleted.
+-    pub fn alive_bitset(&self) -> Option<&MutableBitSet> {
++    pub fn alive_bitset(&self) -> Option<&BitSet> {
+         self.alive_bitset.as_ref()
+     }
+ 
+diff --git a/src/query/automaton_weight.rs b/src/query/automaton_weight.rs
+index 4bfad646a..e9375e96c 100644
+--- a/src/query/automaton_weight.rs
++++ b/src/query/automaton_weight.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::sync::Arc;
+ 
+-use common::MutableBitSet;
++use common::BitSet;
+ use tantivy_fst::Automaton;
+ 
+ use crate::core::SegmentReader;
+@@ -46,7 +46,7 @@ where
+ {
+     fn scorer(&self, reader: &SegmentReader, boost: Score) -> crate::Result<Box<dyn Scorer>> {
+         let max_doc = reader.max_doc();
+-        let mut doc_bitset = MutableBitSet::with_max_value(max_doc);
++        let mut doc_bitset = BitSet::with_max_value(max_doc);
+         let inverted_index = reader.inverted_index(self.field)?;
+         let term_dict = inverted_index.terms();
+         let mut term_stream = self.automaton_stream(term_dict)?;
+diff --git a/src/query/bitset/mod.rs b/src/query/bitset/mod.rs
+index 999abd34f..040e8f948 100644
+--- a/src/query/bitset/mod.rs
++++ b/src/query/bitset/mod.rs
+@@ -1,4 +1,4 @@
+-use common::{BitSet, MutableBitSet, TinySet};
++use common::{GenericBitSet, BitSet, TinySet};
+ 
+ use crate::docset::{DocSet, TERMINATED};
+ use crate::DocId;
+@@ -12,21 +12,21 @@ use crate::DocId;
+ ///
+ /// TODO: Consider implementing a `BitTreeSet` in order to advance faster
+ /// when the bitset is sparse
+-pub struct BitSetDocSet<T: BitSet = MutableBitSet> {
++pub struct BitSetDocSet<T: GenericBitSet = BitSet> {
+     docs: T,
+     cursor_bucket: u32, //< index associated with the current tiny bitset
+     cursor_tinybitset: TinySet,
+     doc: u32,
+ }
+ 
+-impl<T: BitSet> BitSetDocSet<T> {
++impl<T: GenericBitSet> BitSetDocSet<T> {
+     fn go_to_bucket(&mut self, bucket_addr: u32) {
+         self.cursor_bucket = bucket_addr;
+         self.cursor_tinybitset = self.docs.tinyset(bucket_addr);
+     }
+ }
+ 
+-impl<T: BitSet> From<T> for BitSetDocSet<T> {
++impl<T: GenericBitSet> From<T> for BitSetDocSet<T> {
+     fn from(docs: T) -> BitSetDocSet<T> {
+         let first_tiny_bitset = if docs.max_value() == 0 {
+             TinySet::empty()
+@@ -44,7 +44,7 @@ impl<T: BitSet> From<T> for BitSetDocSet<T> {
+     }
+ }
+ 
+-impl<T: BitSet> DocSet for BitSetDocSet<T> {
++impl<T: GenericBitSet> DocSet for BitSetDocSet<T> {
+     fn advance(&mut self) -> DocId {
+         if let Some(lower) = self.cursor_tinybitset.pop_lowest() {
+             self.doc = (self.cursor_bucket * 64u32) | lower;
+@@ -96,7 +96,7 @@ impl<T: BitSet> DocSet for BitSetDocSet<T> {
+ mod tests {
+     use std::collections::BTreeSet;
+ 
+-    use common::MutableBitSet;
++    use common::BitSet;
+ 
+     use super::BitSetDocSet;
+     use crate::docset::{DocSet, TERMINATED};
+@@ -104,7 +104,7 @@ mod tests {
+     use crate::DocId;
+ 
+     fn create_docbitset(docs: &[DocId], max_doc: DocId) -> BitSetDocSet {
+-        let mut docset = MutableBitSet::with_max_value(max_doc);
++        let mut docset = BitSet::with_max_value(max_doc);
+         for &doc in docs {
+             docset.insert(doc);
+         }
+@@ -115,7 +115,7 @@ mod tests {
+     fn test_bitset_large() {
+         let arr = generate_nonunique_unsorted(100_000, 5_000);
+         let mut btreeset: BTreeSet<u32> = BTreeSet::new();
+-        let mut bitset = MutableBitSet::with_max_value(100_000);
++        let mut bitset = BitSet::with_max_value(100_000);
+         for el in arr {
+             btreeset.insert(el);
+             bitset.insert(el);
+@@ -136,14 +136,14 @@ mod tests {
+ 
+     #[test]
+     fn test_empty() {
+-        let bitset = MutableBitSet::with_max_value(1000);
++        let bitset = BitSet::with_max_value(1000);
+         let mut empty = BitSetDocSet::from(bitset);
+         assert_eq!(empty.advance(), TERMINATED)
+     }
+ 
+     #[test]
+     fn test_seek_terminated() {
+-        let bitset = MutableBitSet::with_max_value(1000);
++        let bitset = BitSet::with_max_value(1000);
+         let mut empty = BitSetDocSet::from(bitset);
+         assert_eq!(empty.seek(TERMINATED), TERMINATED)
+     }
+@@ -242,7 +242,7 @@ mod bench {
+     fn bench_bitset_1pct_insert(b: &mut test::Bencher) {
+         let els = tests::generate_nonunique_unsorted(1_000_000u32, 10_000);
+         b.iter(|| {
+-            let mut bitset = MutableBitSet::with_max_value(1_000_000);
++            let mut bitset = BitSet::with_max_value(1_000_000);
+             for el in els.iter().cloned() {
+                 bitset.insert(el);
+             }
+@@ -252,7 +252,7 @@ mod bench {
+     #[bench]
+     fn bench_bitset_1pct_clone(b: &mut test::Bencher) {
+         let els = tests::generate_nonunique_unsorted(1_000_000u32, 10_000);
+-        let mut bitset = MutableBitSet::with_max_value(1_000_000);
++        let mut bitset = BitSet::with_max_value(1_000_000);
+         for el in els {
+             bitset.insert(el);
+         }
+@@ -262,7 +262,7 @@ mod bench {
+     #[bench]
+     fn bench_bitset_1pct_clone_iterate(b: &mut test::Bencher) {
+         let els = tests::sample(1_000_000u32, 0.01);
+-        let mut bitset = MutableBitSet::with_max_value(1_000_000);
++        let mut bitset = BitSet::with_max_value(1_000_000);
+         for el in els {
+             bitset.insert(el);
+         }
+diff --git a/src/query/range_query/range_query.rs b/src/query/range_query/range_query.rs
+index 23b049c53..727f5ea8a 100644
+--- a/src/query/range_query/range_query.rs
++++ b/src/query/range_query/range_query.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::ops::{Bound, Range};
+ 
+-use common::{BinarySerializable, MutableBitSet};
++use common::{BinarySerializable, BitSet};
+ 
+ use super::range_query_u64_fastfield::FastFieldRangeWeight;
+ use crate::core::SegmentReader;
+@@ -377,7 +377,7 @@ impl RangeWeight {
+ impl Weight for RangeWeight {
+     fn scorer(&self, reader: &SegmentReader, boost: Score) -> crate::Result<Box<dyn Scorer>> {
+         let max_doc = reader.max_doc();
+-        let mut doc_bitset = MutableBitSet::with_max_value(max_doc);
++        let mut doc_bitset = BitSet::with_max_value(max_doc);
+ 
+         let inverted_index = reader.inverted_index(reader.schema().get_field(&self.field)?)?;
+         let term_dict = inverted_index.terms();
+-- 
+2.46.0
+
+From 3f33bfefce4291f7f805a6e7fadec24f911cdd62 Mon Sep 17 00:00:00 2001
+From: Sujay Jayakar <sujayakar@convex.dev>
+Date: Mon, 13 May 2024 11:57:38 -0400
+Subject: [PATCH] revert naming
+
+---
+ common/src/bitset.rs                      | 110 ++++++++++++++--------
+ fastfield_codecs/src/null_index/sparse.rs |   4 +-
+ src/fastfield/alive_bitset.rs             |   8 +-
+ src/indexer/index_writer.rs               |  12 +--
+ src/indexer/segment_entry.rs              |   8 +-
+ src/query/automaton_weight.rs             |   4 +-
+ src/query/bitset/mod.rs                   |  26 ++---
+ src/query/range_query/range_query.rs      |   4 +-
+ 8 files changed, 104 insertions(+), 72 deletions(-)
+
+diff --git a/common/src/bitset.rs b/common/src/bitset.rs
+index 2c39a65ab..f05b78252 100644
+--- a/common/src/bitset.rs
++++ b/common/src/bitset.rs
+@@ -175,7 +175,7 @@ impl TinySet {
+ }
+ 
+ #[derive(Clone)]
+-pub struct MutableBitSet {
++pub struct BitSet {
+     tinysets: Box<[TinySet]>,
+     len: u64,
+     max_value: u32,
+@@ -185,7 +185,7 @@ fn num_buckets(max_val: u32) -> u32 {
+     (max_val + 63u32) / 64u32
+ }
+ 
+-impl MutableBitSet {
++impl BitSet {
+     /// serialize a `BitSet`.
+     pub fn serialize<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+         writer.write_all(self.max_value.to_le_bytes().as_ref())?;
+@@ -198,10 +198,10 @@ impl MutableBitSet {
+ 
+     /// Create a new `BitSet` that may contain elements
+     /// within `[0, max_val)`.
+-    pub fn with_max_value(max_value: u32) -> MutableBitSet {
++    pub fn with_max_value(max_value: u32) -> BitSet {
+         let num_buckets = num_buckets(max_value);
+         let tinybitsets = vec![TinySet::empty(); num_buckets as usize].into_boxed_slice();
+-        MutableBitSet {
++        BitSet {
+             tinysets: tinybitsets,
+             len: 0,
+             max_value,
+@@ -210,7 +210,7 @@ impl MutableBitSet {
+ 
+     /// Create a new `BitSet` that may contain elements. Initially all values will be set.
+     /// within `[0, max_val)`.
+-    pub fn with_max_value_and_full(max_value: u32) -> MutableBitSet {
++    pub fn with_max_value_and_full(max_value: u32) -> BitSet {
+         let num_buckets = num_buckets(max_value);
+         let mut tinybitsets = vec![TinySet::full(); num_buckets as usize].into_boxed_slice();
+ 
+@@ -219,7 +219,7 @@ impl MutableBitSet {
+         if lower != 0 {
+             tinybitsets[tinybitsets.len() - 1] = TinySet::range_lower(lower);
+         }
+-        MutableBitSet {
++        BitSet {
+             tinysets: tinybitsets,
+             len: max_value as u64,
+             max_value,
+@@ -247,6 +247,12 @@ impl MutableBitSet {
+         }
+     }
+ 
++    /// Returns the number of elements in the `BitSet`.
++    #[inline]
++    pub fn len(&self) -> usize {
++        self.len as usize
++    }
++
+     /// Inserts an element in the `BitSet`
+     #[inline]
+     pub fn insert(&mut self, el: u32) {
+@@ -270,6 +276,31 @@ impl MutableBitSet {
+     pub fn contains(&self, el: u32) -> bool {
+         self.tinyset(el / 64u32).contains(el % 64)
+     }
++
++    /// Returns the first non-empty `TinySet` associated with a bucket lower
++    /// or greater than bucket.
++    ///
++    /// Reminder: the tiny set with the bucket `bucket`, represents the
++    /// elements from `bucket * 64` to `(bucket+1) * 64`.
++    pub fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
++        self.tinysets[bucket as usize..]
++            .iter()
++            .cloned()
++            .position(|tinyset| !tinyset.is_empty())
++            .map(|delta_bucket| bucket + delta_bucket as u32)
++    }
++
++    #[inline]
++    pub fn max_value(&self) -> u32 {
++        self.max_value
++    }
++
++    /// Returns the tiny bitset representing the
++    /// the set restricted to the number range from
++    /// `bucket * 64` to `(bucket + 1) * 64`.
++    pub fn tinyset(&self, bucket: u32) -> TinySet {
++        self.tinysets[bucket as usize]
++    }
+ }
+ 
+ /// Serialized BitSet.
+@@ -304,6 +335,14 @@ impl ReadOnlyBitSet {
+         ReadOnlyBitSet { data, max_value }
+     }
+ 
++    /// Number of elements in the bitset.
++    #[inline]
++    pub fn len(&self) -> usize {
++        self.iter_tinysets()
++            .map(|tinyset| tinyset.len() as usize)
++            .sum()
++    }
++
+     /// Iterate the tinyset on the fly from serialized data.
+     #[inline]
+     fn iter_tinysets(&self) -> impl Iterator<Item = TinySet> + '_ {
+@@ -352,8 +391,8 @@ impl ReadOnlyBitSet {
+     }
+ }
+ 
+-impl<'a> From<&'a MutableBitSet> for ReadOnlyBitSet {
+-    fn from(bitset: &'a MutableBitSet) -> ReadOnlyBitSet {
++impl<'a> From<&'a BitSet> for ReadOnlyBitSet {
++    fn from(bitset: &'a BitSet) -> ReadOnlyBitSet {
+         let mut buffer = Vec::with_capacity(bitset.tinysets.len() * 8 + 4);
+         bitset
+             .serialize(&mut buffer)
+@@ -362,49 +401,43 @@ impl<'a> From<&'a MutableBitSet> for ReadOnlyBitSet {
+     }
+ }
+ 
+-pub trait BitSet: Send {
++pub trait GenericBitSet: Send {
+     /// Returns the first non-empty `TinySet` associated with a bucket lower
+     /// or greater than bucket.
+     ///
+     /// Reminder: the tiny set with the bucket `bucket`, represents the
+     /// elements from `bucket * 64` to `(bucket+1) * 64`.
+     fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32>;
+-
+-    /// Returns the tiny bitset representing the
+-    /// the set restricted to the number range from
+-    /// `bucket * 64` to `(bucket + 1) * 64`.
+     fn tinyset(&self, bucket: u32) -> TinySet;
+ 
+     fn max_value(&self) -> u32;
+     fn len(&self) -> usize;
+ }
+ 
+-impl BitSet for MutableBitSet {
++impl GenericBitSet for BitSet {
++    #[inline]
+     fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
+-        self.tinysets[bucket as usize..]
+-            .iter()
+-            .cloned()
+-            .position(|tinyset| !tinyset.is_empty())
+-            .map(|delta_bucket| bucket + delta_bucket as u32)
++        BitSet::first_non_empty_bucket(self, bucket)
+     }
+ 
+     #[inline]
+     fn max_value(&self) -> u32 {
+-        self.max_value
++        BitSet::max_value(self)
+     }
+ 
++    #[inline]
+     fn tinyset(&self, bucket: u32) -> TinySet {
+-        self.tinysets[bucket as usize]
++        BitSet::tinyset(self, bucket)
+     }
+ 
+     /// Returns the number of elements in the `BitSet`.
+     #[inline]
+     fn len(&self) -> usize {
+-        self.len as usize
++        BitSet::len(self)
+     }
+ }
+ 
+-impl BitSet for ReadOnlyBitSet {
++impl GenericBitSet for ReadOnlyBitSet {
+     fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
+         self.data[(bucket as usize * 8)..]
+             .chunks_exact(8)
+@@ -418,6 +451,7 @@ impl BitSet for ReadOnlyBitSet {
+         self.max_value
+     }
+ 
++    #[inline]
+     fn tinyset(&self, bucket: u32) -> TinySet {
+         let byte_offset = bucket as usize * 8;
+         let chunk = self.data[byte_offset..byte_offset + 8].try_into().unwrap();
+@@ -426,9 +460,7 @@ impl BitSet for ReadOnlyBitSet {
+ 
+     #[inline]
+     fn len(&self) -> usize {
+-        self.iter_tinysets()
+-            .map(|tinyset| tinyset.len() as usize)
+-            .sum()
++        ReadOnlyBitSet::len(self)
+     }
+ }
+ 
+@@ -442,12 +474,12 @@ mod tests {
+     use rand::rngs::StdRng;
+     use rand::{Rng, SeedableRng};
+ 
+-    use super::{MutableBitSet, ReadOnlyBitSet, TinySet};
++    use super::{BitSet, ReadOnlyBitSet, TinySet};
+ 
+     #[test]
+     fn test_read_serialized_bitset_full_multi() {
+         for i in 0..1000 {
+-            let bitset = MutableBitSet::with_max_value_and_full(i);
++            let bitset = BitSet::with_max_value_and_full(i);
+             let mut out = vec![];
+             bitset.serialize(&mut out).unwrap();
+ 
+@@ -458,7 +490,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_full_block() {
+-        let bitset = MutableBitSet::with_max_value_and_full(64);
++        let bitset = BitSet::with_max_value_and_full(64);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+ 
+@@ -468,7 +500,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_full() {
+-        let mut bitset = MutableBitSet::with_max_value_and_full(5);
++        let mut bitset = BitSet::with_max_value_and_full(5);
+         bitset.remove(3);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+@@ -480,7 +512,7 @@ mod tests {
+     #[test]
+     fn test_bitset_intersect() {
+         let bitset_serialized = {
+-            let mut bitset = MutableBitSet::with_max_value_and_full(5);
++            let mut bitset = BitSet::with_max_value_and_full(5);
+             bitset.remove(1);
+             bitset.remove(3);
+             let mut out = vec![];
+@@ -489,7 +521,7 @@ mod tests {
+             ReadOnlyBitSet::open(OwnedBytes::new(out))
+         };
+ 
+-        let mut bitset = MutableBitSet::with_max_value_and_full(5);
++        let mut bitset = BitSet::with_max_value_and_full(5);
+         bitset.remove(1);
+         bitset.intersect_update(&bitset_serialized);
+ 
+@@ -519,7 +551,7 @@ mod tests {
+ 
+     #[test]
+     fn test_read_serialized_bitset_empty() {
+-        let mut bitset = MutableBitSet::with_max_value(5);
++        let mut bitset = BitSet::with_max_value(5);
+         bitset.insert(3);
+         let mut out = vec![];
+         bitset.serialize(&mut out).unwrap();
+@@ -528,7 +560,7 @@ mod tests {
+         assert_eq!(bitset.len(), 1);
+ 
+         {
+-            let bitset = MutableBitSet::with_max_value(5);
++            let bitset = BitSet::with_max_value(5);
+             let mut out = vec![];
+             bitset.serialize(&mut out).unwrap();
+             let bitset = ReadOnlyBitSet::open(OwnedBytes::new(out));
+@@ -605,7 +637,7 @@ mod tests {
+     fn test_bitset() {
+         let test_against_hashset = |els: &[u32], max_value: u32| {
+             let mut hashset: HashSet<u32> = HashSet::new();
+-            let mut bitset = MutableBitSet::with_max_value(max_value);
++            let mut bitset = BitSet::with_max_value(max_value);
+             for &el in els {
+                 assert!(el < max_value);
+                 hashset.insert(el);
+@@ -677,7 +709,7 @@ mod tests {
+ 
+     #[test]
+     fn test_bitset_len() {
+-        let mut bitset = MutableBitSet::with_max_value(1_000);
++        let mut bitset = BitSet::with_max_value(1_000);
+         assert_eq!(bitset.len(), 0);
+         bitset.insert(3u32);
+         assert_eq!(bitset.len(), 1);
+@@ -714,7 +746,7 @@ mod tests {
+ 
+     #[test]
+     fn test_bitset_clear() {
+-        let mut bitset = MutableBitSet::with_max_value(1_000);
++        let mut bitset = BitSet::with_max_value(1_000);
+         let els = sample(1_000, 0.01f64);
+         for &el in &els {
+             bitset.insert(el);
+@@ -732,7 +764,7 @@ mod bench {
+ 
+     use test;
+ 
+-    use super::{MutableBitSet, TinySet};
++    use super::{BitSet, TinySet};
+ 
+     #[bench]
+     fn bench_tinyset_pop(b: &mut test::Bencher) {
+@@ -763,6 +795,6 @@ mod bench {
+ 
+     #[bench]
+     fn bench_bitset_initialize(b: &mut test::Bencher) {
+-        b.iter(|| MutableBitSet::with_max_value(1_000_000));
++        b.iter(|| BitSet::with_max_value(1_000_000));
+     }
+ }
+diff --git a/fastfield_codecs/src/null_index/sparse.rs b/fastfield_codecs/src/null_index/sparse.rs
+index d3c83307e..e9e69caa1 100644
+--- a/fastfield_codecs/src/null_index/sparse.rs
++++ b/fastfield_codecs/src/null_index/sparse.rs
+@@ -1,6 +1,6 @@
+ use std::io::{self, Write};
+ 
+-use common::{MutableBitSet, GroupByIteratorExtended, OwnedBytes};
++use common::{BitSet, GroupByIteratorExtended, OwnedBytes};
+ 
+ use super::{serialize_dense_codec, DenseCodec};
+ 
+@@ -374,7 +374,7 @@ pub fn serialize_sparse_codec<W: Write>(
+                 out.write_all(val_in_block.to_le_bytes().as_ref())?;
+             }
+         } else {
+-            let mut bitset = MutableBitSet::with_max_value(ELEMENTS_PER_BLOCK + 1);
++            let mut bitset = BitSet::with_max_value(ELEMENTS_PER_BLOCK + 1);
+             for val_in_block in current_block.iter() {
+                 bitset.insert(*val_in_block as u32);
+             }
+diff --git a/src/fastfield/alive_bitset.rs b/src/fastfield/alive_bitset.rs
+index 185a5717d..92337207b 100644
+--- a/src/fastfield/alive_bitset.rs
++++ b/src/fastfield/alive_bitset.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::io::Write;
+ 
+-use common::{intersect_bitsets, MutableBitSet, OwnedBytes, ReadOnlyBitSet, BitSet};
++use common::{intersect_bitsets, BitSet, OwnedBytes, ReadOnlyBitSet, GenericBitSet};
+ 
+ use crate::space_usage::ByteCount;
+ use crate::DocId;
+@@ -11,7 +11,7 @@ use crate::DocId;
+ /// where `alive_bitset` is the set of alive `DocId`.
+ /// Warning: this function does not call terminate. The caller is in charge of
+ /// closing the writer properly.
+-pub fn write_alive_bitset<T: Write>(alive_bitset: &MutableBitSet, writer: &mut T) -> io::Result<()> {
++pub fn write_alive_bitset<T: Write>(alive_bitset: &BitSet, writer: &mut T) -> io::Result<()> {
+     alive_bitset.serialize(writer)?;
+     Ok(())
+ }
+@@ -39,7 +39,7 @@ impl AliveBitSet {
+     #[cfg(test)]
+     pub(crate) fn for_test_from_deleted_docs(deleted_docs: &[DocId], max_doc: u32) -> AliveBitSet {
+         assert!(deleted_docs.iter().all(|&doc| doc < max_doc));
+-        let mut bitset = MutableBitSet::with_max_value_and_full(max_doc);
++        let mut bitset = BitSet::with_max_value_and_full(max_doc);
+         for &doc in deleted_docs {
+             bitset.remove(doc);
+         }
+@@ -49,7 +49,7 @@ impl AliveBitSet {
+         Self::open(alive_bitset_bytes)
+     }
+ 
+-    pub fn from_bitset(bitset: &MutableBitSet) -> AliveBitSet {
++    pub fn from_bitset(bitset: &BitSet) -> AliveBitSet {
+         let readonly_bitset = ReadOnlyBitSet::from(bitset);
+         AliveBitSet::from(readonly_bitset)
+     }
+diff --git a/src/indexer/index_writer.rs b/src/indexer/index_writer.rs
+index b8eddcd6d..c11fbbfc2 100644
+--- a/src/indexer/index_writer.rs
++++ b/src/indexer/index_writer.rs
+@@ -3,7 +3,7 @@ use std::sync::Arc;
+ use std::thread;
+ use std::thread::JoinHandle;
+ 
+-use common::{MutableBitSet, BitSet};
++use common::{BitSet, GenericBitSet};
+ use smallvec::smallvec;
+ 
+ use super::operation::{AddOperation, UserOperation};
+@@ -78,7 +78,7 @@ pub struct IndexWriter {
+ }
+ 
+ fn compute_deleted_bitset(
+-    alive_bitset: &mut MutableBitSet,
++    alive_bitset: &mut BitSet,
+     segment_reader: &SegmentReader,
+     delete_cursor: &mut DeleteCursor,
+     doc_opstamps: &DocToOpstampMapping,
+@@ -129,9 +129,9 @@ pub(crate) fn advance_deletes(
+     let segment_reader = SegmentReader::open(&segment)?;
+ 
+     let max_doc = segment_reader.max_doc();
+-    let mut alive_bitset: MutableBitSet = match segment_entry.alive_bitset() {
++    let mut alive_bitset: BitSet = match segment_entry.alive_bitset() {
+         Some(previous_alive_bitset) => (*previous_alive_bitset).clone(),
+-        None => MutableBitSet::with_max_value_and_full(max_doc),
++        None => BitSet::with_max_value_and_full(max_doc),
+     };
+ 
+     let num_deleted_docs_before = segment.meta().num_deleted_docs();
+@@ -213,7 +213,7 @@ fn apply_deletes(
+     segment: &Segment,
+     delete_cursor: &mut DeleteCursor,
+     doc_opstamps: &[Opstamp],
+-) -> crate::Result<Option<MutableBitSet>> {
++) -> crate::Result<Option<BitSet>> {
+     if delete_cursor.get().is_none() {
+         // if there are no delete operation in the queue, no need
+         // to even open the segment.
+@@ -230,7 +230,7 @@ fn apply_deletes(
+     let doc_to_opstamps = DocToOpstampMapping::WithMap(doc_opstamps);
+ 
+     let max_doc = segment.meta().max_doc();
+-    let mut deleted_bitset = MutableBitSet::with_max_value_and_full(max_doc);
++    let mut deleted_bitset = BitSet::with_max_value_and_full(max_doc);
+     let may_have_deletes = compute_deleted_bitset(
+         &mut deleted_bitset,
+         &segment_reader,
+diff --git a/src/indexer/segment_entry.rs b/src/indexer/segment_entry.rs
+index cb1de40ac..0e5002338 100644
+--- a/src/indexer/segment_entry.rs
++++ b/src/indexer/segment_entry.rs
+@@ -1,6 +1,6 @@
+ use std::fmt;
+ 
+-use common::MutableBitSet;
++use common::BitSet;
+ 
+ use crate::core::{SegmentId, SegmentMeta};
+ use crate::indexer::delete_queue::DeleteCursor;
+@@ -19,7 +19,7 @@ use crate::indexer::delete_queue::DeleteCursor;
+ #[derive(Clone)]
+ pub struct SegmentEntry {
+     meta: SegmentMeta,
+-    alive_bitset: Option<MutableBitSet>,
++    alive_bitset: Option<BitSet>,
+     delete_cursor: DeleteCursor,
+ }
+ 
+@@ -28,7 +28,7 @@ impl SegmentEntry {
+     pub fn new(
+         segment_meta: SegmentMeta,
+         delete_cursor: DeleteCursor,
+-        alive_bitset: Option<MutableBitSet>,
++        alive_bitset: Option<BitSet>,
+     ) -> SegmentEntry {
+         SegmentEntry {
+             meta: segment_meta,
+@@ -40,7 +40,7 @@ impl SegmentEntry {
+     /// Return a reference to the segment entry deleted bitset.
+     ///
+     /// `DocId` in this bitset are flagged as deleted.
+-    pub fn alive_bitset(&self) -> Option<&MutableBitSet> {
++    pub fn alive_bitset(&self) -> Option<&BitSet> {
+         self.alive_bitset.as_ref()
+     }
+ 
+diff --git a/src/query/automaton_weight.rs b/src/query/automaton_weight.rs
+index 4bfad646a..e9375e96c 100644
+--- a/src/query/automaton_weight.rs
++++ b/src/query/automaton_weight.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::sync::Arc;
+ 
+-use common::MutableBitSet;
++use common::BitSet;
+ use tantivy_fst::Automaton;
+ 
+ use crate::core::SegmentReader;
+@@ -46,7 +46,7 @@ where
+ {
+     fn scorer(&self, reader: &SegmentReader, boost: Score) -> crate::Result<Box<dyn Scorer>> {
+         let max_doc = reader.max_doc();
+-        let mut doc_bitset = MutableBitSet::with_max_value(max_doc);
++        let mut doc_bitset = BitSet::with_max_value(max_doc);
+         let inverted_index = reader.inverted_index(self.field)?;
+         let term_dict = inverted_index.terms();
+         let mut term_stream = self.automaton_stream(term_dict)?;
+diff --git a/src/query/bitset/mod.rs b/src/query/bitset/mod.rs
+index 999abd34f..040e8f948 100644
+--- a/src/query/bitset/mod.rs
++++ b/src/query/bitset/mod.rs
+@@ -1,4 +1,4 @@
+-use common::{BitSet, MutableBitSet, TinySet};
++use common::{GenericBitSet, BitSet, TinySet};
+ 
+ use crate::docset::{DocSet, TERMINATED};
+ use crate::DocId;
+@@ -12,21 +12,21 @@ use crate::DocId;
+ ///
+ /// TODO: Consider implementing a `BitTreeSet` in order to advance faster
+ /// when the bitset is sparse
+-pub struct BitSetDocSet<T: BitSet = MutableBitSet> {
++pub struct BitSetDocSet<T: GenericBitSet = BitSet> {
+     docs: T,
+     cursor_bucket: u32, //< index associated with the current tiny bitset
+     cursor_tinybitset: TinySet,
+     doc: u32,
+ }
+ 
+-impl<T: BitSet> BitSetDocSet<T> {
++impl<T: GenericBitSet> BitSetDocSet<T> {
+     fn go_to_bucket(&mut self, bucket_addr: u32) {
+         self.cursor_bucket = bucket_addr;
+         self.cursor_tinybitset = self.docs.tinyset(bucket_addr);
+     }
+ }
+ 
+-impl<T: BitSet> From<T> for BitSetDocSet<T> {
++impl<T: GenericBitSet> From<T> for BitSetDocSet<T> {
+     fn from(docs: T) -> BitSetDocSet<T> {
+         let first_tiny_bitset = if docs.max_value() == 0 {
+             TinySet::empty()
+@@ -44,7 +44,7 @@ impl<T: BitSet> From<T> for BitSetDocSet<T> {
+     }
+ }
+ 
+-impl<T: BitSet> DocSet for BitSetDocSet<T> {
++impl<T: GenericBitSet> DocSet for BitSetDocSet<T> {
+     fn advance(&mut self) -> DocId {
+         if let Some(lower) = self.cursor_tinybitset.pop_lowest() {
+             self.doc = (self.cursor_bucket * 64u32) | lower;
+@@ -96,7 +96,7 @@ impl<T: BitSet> DocSet for BitSetDocSet<T> {
+ mod tests {
+     use std::collections::BTreeSet;
+ 
+-    use common::MutableBitSet;
++    use common::BitSet;
+ 
+     use super::BitSetDocSet;
+     use crate::docset::{DocSet, TERMINATED};
+@@ -104,7 +104,7 @@ mod tests {
+     use crate::DocId;
+ 
+     fn create_docbitset(docs: &[DocId], max_doc: DocId) -> BitSetDocSet {
+-        let mut docset = MutableBitSet::with_max_value(max_doc);
++        let mut docset = BitSet::with_max_value(max_doc);
+         for &doc in docs {
+             docset.insert(doc);
+         }
+@@ -115,7 +115,7 @@ mod tests {
+     fn test_bitset_large() {
+         let arr = generate_nonunique_unsorted(100_000, 5_000);
+         let mut btreeset: BTreeSet<u32> = BTreeSet::new();
+-        let mut bitset = MutableBitSet::with_max_value(100_000);
++        let mut bitset = BitSet::with_max_value(100_000);
+         for el in arr {
+             btreeset.insert(el);
+             bitset.insert(el);
+@@ -136,14 +136,14 @@ mod tests {
+ 
+     #[test]
+     fn test_empty() {
+-        let bitset = MutableBitSet::with_max_value(1000);
++        let bitset = BitSet::with_max_value(1000);
+         let mut empty = BitSetDocSet::from(bitset);
+         assert_eq!(empty.advance(), TERMINATED)
+     }
+ 
+     #[test]
+     fn test_seek_terminated() {
+-        let bitset = MutableBitSet::with_max_value(1000);
++        let bitset = BitSet::with_max_value(1000);
+         let mut empty = BitSetDocSet::from(bitset);
+         assert_eq!(empty.seek(TERMINATED), TERMINATED)
+     }
+@@ -242,7 +242,7 @@ mod bench {
+     fn bench_bitset_1pct_insert(b: &mut test::Bencher) {
+         let els = tests::generate_nonunique_unsorted(1_000_000u32, 10_000);
+         b.iter(|| {
+-            let mut bitset = MutableBitSet::with_max_value(1_000_000);
++            let mut bitset = BitSet::with_max_value(1_000_000);
+             for el in els.iter().cloned() {
+                 bitset.insert(el);
+             }
+@@ -252,7 +252,7 @@ mod bench {
+     #[bench]
+     fn bench_bitset_1pct_clone(b: &mut test::Bencher) {
+         let els = tests::generate_nonunique_unsorted(1_000_000u32, 10_000);
+-        let mut bitset = MutableBitSet::with_max_value(1_000_000);
++        let mut bitset = BitSet::with_max_value(1_000_000);
+         for el in els {
+             bitset.insert(el);
+         }
+@@ -262,7 +262,7 @@ mod bench {
+     #[bench]
+     fn bench_bitset_1pct_clone_iterate(b: &mut test::Bencher) {
+         let els = tests::sample(1_000_000u32, 0.01);
+-        let mut bitset = MutableBitSet::with_max_value(1_000_000);
++        let mut bitset = BitSet::with_max_value(1_000_000);
+         for el in els {
+             bitset.insert(el);
+         }
+diff --git a/src/query/range_query/range_query.rs b/src/query/range_query/range_query.rs
+index 23b049c53..727f5ea8a 100644
+--- a/src/query/range_query/range_query.rs
++++ b/src/query/range_query/range_query.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::ops::{Bound, Range};
+ 
+-use common::{BinarySerializable, MutableBitSet};
++use common::{BinarySerializable, BitSet};
+ 
+ use super::range_query_u64_fastfield::FastFieldRangeWeight;
+ use crate::core::SegmentReader;
+@@ -377,7 +377,7 @@ impl RangeWeight {
+ impl Weight for RangeWeight {
+     fn scorer(&self, reader: &SegmentReader, boost: Score) -> crate::Result<Box<dyn Scorer>> {
+         let max_doc = reader.max_doc();
+-        let mut doc_bitset = MutableBitSet::with_max_value(max_doc);
++        let mut doc_bitset = BitSet::with_max_value(max_doc);
+ 
+         let inverted_index = reader.inverted_index(reader.schema().get_field(&self.field)?)?;
+         let term_dict = inverted_index.terms();
+-- 
+2.46.0
+
+From 571f58830cc330a2a92ad98fa1f0230fbb76af79 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Tue, 14 May 2024 17:56:56 -0700
+Subject: [PATCH] deserialize bitset
+
+---
+ common/src/bitset.rs          | 34 ++++++++++++++++++++++++++++++----
+ src/fastfield/alive_bitset.rs |  2 +-
+ src/indexer/index_writer.rs   |  2 +-
+ 3 files changed, 32 insertions(+), 6 deletions(-)
+
+diff --git a/common/src/bitset.rs b/common/src/bitset.rs
+index f05b78252..3e15410bf 100644
+--- a/common/src/bitset.rs
++++ b/common/src/bitset.rs
+@@ -1,5 +1,5 @@
+ use std::convert::TryInto;
+-use std::io::Write;
++use std::io::{Read, Write};
+ use std::{fmt, io, u64};
+ 
+ use ownedbytes::OwnedBytes;
+@@ -174,7 +174,7 @@ impl TinySet {
+     }
+ }
+ 
+-#[derive(Clone)]
++#[derive(Clone, Debug, PartialEq, Eq)]
+ pub struct BitSet {
+     tinysets: Box<[TinySet]>,
+     len: u64,
+@@ -196,6 +196,30 @@ impl BitSet {
+         Ok(())
+     }
+ 
++    pub fn deserialize(mut reader: impl Read) -> io::Result<Self> {
++        let mut max_buf = vec![0; 4];
++        reader.read_exact(&mut max_buf)?;
++        let max_value =
++            u32::from_le_bytes(max_buf.try_into().expect("Max value should be 4 bytes"));
++        let mut tinysets_buf = Vec::new();
++        reader.read_to_end(&mut tinysets_buf)?;
++        let mut tinysets = Vec::new();
++        let mut len = 0;
++        for chunk in tinysets_buf.chunks_exact(8) {
++            let slice: &[u8; 8] = chunk.try_into().unwrap();
++            let tinyset = TinySet::deserialize(slice.clone());
++            len += tinyset.len() as u64;
++            tinysets.push(tinyset);
++        }
++
++        let tinysets = tinysets.into_boxed_slice();
++        Ok(Self {
++            tinysets,
++            len,
++            max_value,
++        })
++    }
++
+     /// Create a new `BitSet` that may contain elements
+     /// within `[0, max_val)`.
+     pub fn with_max_value(max_value: u32) -> BitSet {
+@@ -483,8 +507,10 @@ mod tests {
+             let mut out = vec![];
+             bitset.serialize(&mut out).unwrap();
+ 
+-            let bitset = ReadOnlyBitSet::open(OwnedBytes::new(out));
+-            assert_eq!(bitset.len(), i as usize);
++            let read_only_bitset = ReadOnlyBitSet::open(OwnedBytes::new(out.clone()));
++            assert_eq!(read_only_bitset.len(), i as usize);
++            let bitset_deserialized = BitSet::deserialize(&out[..]).unwrap();
++            assert_eq!(bitset, bitset_deserialized);
+         }
+     }
+ 
+diff --git a/src/fastfield/alive_bitset.rs b/src/fastfield/alive_bitset.rs
+index 92337207b..c54be0f0b 100644
+--- a/src/fastfield/alive_bitset.rs
++++ b/src/fastfield/alive_bitset.rs
+@@ -1,7 +1,7 @@
+ use std::io;
+ use std::io::Write;
+ 
+-use common::{intersect_bitsets, BitSet, OwnedBytes, ReadOnlyBitSet, GenericBitSet};
++use common::{intersect_bitsets, BitSet, OwnedBytes, ReadOnlyBitSet};
+ 
+ use crate::space_usage::ByteCount;
+ use crate::DocId;
+diff --git a/src/indexer/index_writer.rs b/src/indexer/index_writer.rs
+index c11fbbfc2..abe97d58a 100644
+--- a/src/indexer/index_writer.rs
++++ b/src/indexer/index_writer.rs
+@@ -3,7 +3,7 @@ use std::sync::Arc;
+ use std::thread;
+ use std::thread::JoinHandle;
+ 
+-use common::{BitSet, GenericBitSet};
++use common::BitSet;
+ use smallvec::smallvec;
+ 
+ use super::operation::{AddOperation, UserOperation};
+-- 
+2.46.0
+
+From aed124441e6592a2d23b13c1eee7479e5cd38818 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Wed, 15 May 2024 11:07:03 -0700
+Subject: [PATCH] rust optimizations
+
+---
+ common/src/bitset.rs | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/common/src/bitset.rs b/common/src/bitset.rs
+index 3e15410bf..518a51248 100644
+--- a/common/src/bitset.rs
++++ b/common/src/bitset.rs
+@@ -1,7 +1,9 @@
++use byteorder::ReadBytesExt;
+ use std::convert::TryInto;
+ use std::io::{Read, Write};
+ use std::{fmt, io, u64};
+ 
++use byteorder::LittleEndian;
+ use ownedbytes::OwnedBytes;
+ 
+ #[derive(Clone, Copy, Eq, PartialEq)]
+@@ -197,17 +199,14 @@ impl BitSet {
+     }
+ 
+     pub fn deserialize(mut reader: impl Read) -> io::Result<Self> {
+-        let mut max_buf = vec![0; 4];
+-        reader.read_exact(&mut max_buf)?;
+-        let max_value =
+-            u32::from_le_bytes(max_buf.try_into().expect("Max value should be 4 bytes"));
+-        let mut tinysets_buf = Vec::new();
+-        reader.read_to_end(&mut tinysets_buf)?;
+-        let mut tinysets = Vec::new();
++        let max_value = reader.read_u32::<LittleEndian>()?;
++        let buckets = num_buckets(max_value);
++        let mut tinysets = Vec::with_capacity(buckets as usize);
+         let mut len = 0;
+-        for chunk in tinysets_buf.chunks_exact(8) {
+-            let slice: &[u8; 8] = chunk.try_into().unwrap();
+-            let tinyset = TinySet::deserialize(slice.clone());
++        for _ in 0..buckets {
++            let mut buf = [0; 8];
++            reader.read_exact(&mut buf);
++            let tinyset = TinySet::deserialize(buf);
+             len += tinyset.len() as u64;
+             tinysets.push(tinyset);
+         }
+-- 
+2.46.0
+
+From aed124441e6592a2d23b13c1eee7479e5cd38818 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Wed, 15 May 2024 11:07:03 -0700
+Subject: [PATCH] rust optimizations
+
+---
+ common/src/bitset.rs | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/common/src/bitset.rs b/common/src/bitset.rs
+index 3e15410bf..518a51248 100644
+--- a/common/src/bitset.rs
++++ b/common/src/bitset.rs
+@@ -1,7 +1,9 @@
++use byteorder::ReadBytesExt;
+ use std::convert::TryInto;
+ use std::io::{Read, Write};
+ use std::{fmt, io, u64};
+ 
++use byteorder::LittleEndian;
+ use ownedbytes::OwnedBytes;
+ 
+ #[derive(Clone, Copy, Eq, PartialEq)]
+@@ -197,17 +199,14 @@ impl BitSet {
+     }
+ 
+     pub fn deserialize(mut reader: impl Read) -> io::Result<Self> {
+-        let mut max_buf = vec![0; 4];
+-        reader.read_exact(&mut max_buf)?;
+-        let max_value =
+-            u32::from_le_bytes(max_buf.try_into().expect("Max value should be 4 bytes"));
+-        let mut tinysets_buf = Vec::new();
+-        reader.read_to_end(&mut tinysets_buf)?;
+-        let mut tinysets = Vec::new();
++        let max_value = reader.read_u32::<LittleEndian>()?;
++        let buckets = num_buckets(max_value);
++        let mut tinysets = Vec::with_capacity(buckets as usize);
+         let mut len = 0;
+-        for chunk in tinysets_buf.chunks_exact(8) {
+-            let slice: &[u8; 8] = chunk.try_into().unwrap();
+-            let tinyset = TinySet::deserialize(slice.clone());
++        for _ in 0..buckets {
++            let mut buf = [0; 8];
++            reader.read_exact(&mut buf);
++            let tinyset = TinySet::deserialize(buf);
+             len += tinyset.len() as u64;
+             tinysets.push(tinyset);
+         }
+-- 
+2.46.0
+
+From e307d7c12fc85f724586f0cc40bcaf3dfc692758 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Wed, 15 May 2024 13:35:36 -0700
+Subject: [PATCH] into_term_dictionary method to get TermDictionary
+
+---
+ src/core/inverted_index_reader.rs | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/core/inverted_index_reader.rs b/src/core/inverted_index_reader.rs
+index b986b7495..dac65b5ac 100644
+--- a/src/core/inverted_index_reader.rs
++++ b/src/core/inverted_index_reader.rs
+@@ -69,6 +69,11 @@ impl InvertedIndexReader {
+         &self.termdict
+     }
+ 
++    /// Turn into a term dictionary
++    pub fn into_term_dictionary(self) -> TermDictionary {
++        self.termdict
++    }
++
+     /// Resets the block segment to another position of the postings
+     /// file.
+     ///
+-- 
+2.46.0
+
+From e307d7c12fc85f724586f0cc40bcaf3dfc692758 Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emma@convex.dev>
+Date: Wed, 15 May 2024 13:35:36 -0700
+Subject: [PATCH] into_term_dictionary method to get TermDictionary
+
+---
+ src/core/inverted_index_reader.rs | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/core/inverted_index_reader.rs b/src/core/inverted_index_reader.rs
+index b986b7495..dac65b5ac 100644
+--- a/src/core/inverted_index_reader.rs
++++ b/src/core/inverted_index_reader.rs
+@@ -69,6 +69,11 @@ impl InvertedIndexReader {
+         &self.termdict
+     }
+ 
++    /// Turn into a term dictionary
++    pub fn into_term_dictionary(self) -> TermDictionary {
++        self.termdict
++    }
++
+     /// Resets the block segment to another position of the postings
+     /// file.
+     ///
+-- 
+2.46.0
+
+From 2eebf753ed2ea94ec0a2ab4182d34bf147fadc7c Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emmaling27@gmail.com>
+Date: Wed, 15 May 2024 13:44:35 -0700
+Subject: [PATCH] Revert "into_term_dictionary method to get TermDictionary"
+
+---
+ src/core/inverted_index_reader.rs | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/src/core/inverted_index_reader.rs b/src/core/inverted_index_reader.rs
+index dac65b5ac..b986b7495 100644
+--- a/src/core/inverted_index_reader.rs
++++ b/src/core/inverted_index_reader.rs
+@@ -69,11 +69,6 @@ impl InvertedIndexReader {
+         &self.termdict
+     }
+ 
+-    /// Turn into a term dictionary
+-    pub fn into_term_dictionary(self) -> TermDictionary {
+-        self.termdict
+-    }
+-
+     /// Resets the block segment to another position of the postings
+     /// file.
+     ///
+-- 
+2.46.0
+
+From 2eebf753ed2ea94ec0a2ab4182d34bf147fadc7c Mon Sep 17 00:00:00 2001
+From: Emma Forman Ling <emmaling27@gmail.com>
+Date: Wed, 15 May 2024 13:44:35 -0700
+Subject: [PATCH] Revert "into_term_dictionary method to get TermDictionary"
+
+---
+ src/core/inverted_index_reader.rs | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/src/core/inverted_index_reader.rs b/src/core/inverted_index_reader.rs
+index dac65b5ac..b986b7495 100644
+--- a/src/core/inverted_index_reader.rs
++++ b/src/core/inverted_index_reader.rs
+@@ -69,11 +69,6 @@ impl InvertedIndexReader {
+         &self.termdict
+     }
+ 
+-    /// Turn into a term dictionary
+-    pub fn into_term_dictionary(self) -> TermDictionary {
+-        self.termdict
+-    }
+-
+     /// Resets the block segment to another position of the postings
+     /// file.
+     ///
+-- 
+2.46.0
+
