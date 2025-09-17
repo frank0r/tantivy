@@ -14,7 +14,7 @@ tantivy-fst = "0.4"
 proptest = "1"
 criterion = "0.4"
 names = "0.14"
-rand = "0.8"
+rand = "0.9"
 
 [[bench]]
 name = "stream_bench"
