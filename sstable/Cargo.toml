@@ -8,7 +8,7 @@ license = "MIT"
 common = {path="../common", package="tantivy-common"}
 ciborium = "0.2"
 serde = "1"
-tantivy-fst = "0.4"
+tantivy-fst = "0.5"
 
 [dev-dependencies]
 proptest = "1"
