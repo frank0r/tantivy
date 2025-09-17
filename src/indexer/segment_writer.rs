@@ -348,15 +348,15 @@ impl SegmentWriter {
     pub fn add_document<D: Document>(
         &mut self,
         add_operation: AddOperation<D>,
-    ) -> crate::Result<()> {
+    ) -> crate::Result<u32> {
         let AddOperation { document, opstamp } = add_operation;
         self.doc_opstamps.push(opstamp);
-        self.fast_field_writers.add_document(&document)?;
+        let doc_id = self.fast_field_writers.add_document(&document)?;
         self.index_document(&document)?;
         let doc_writer = self.segment_serializer.get_store_writer();
         doc_writer.store(&document, &self.schema)?;
         self.max_doc += 1;
-        Ok(())
+        Ok(doc_id)
     }
 
     /// Max doc is

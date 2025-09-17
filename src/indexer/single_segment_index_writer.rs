@@ -30,7 +30,7 @@ impl<D: Document> SingleSegmentIndexWriter<D> {
         self.segment_writer.mem_usage()
     }
 
-    pub fn add_document(&mut self, document: D) -> crate::Result<()> {
+    pub fn add_document(&mut self, document: D) -> crate::Result<u32> {
         let opstamp = self.opstamp;
         self.opstamp += 1;
         self.segment_writer

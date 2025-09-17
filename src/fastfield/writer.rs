@@ -106,7 +106,7 @@ impl FastFieldsWriter {
     }
 
     /// Indexes all of the fastfields of a new document.
-    pub fn add_document<D: Document>(&mut self, doc: &D) -> crate::Result<()> {
+    pub fn add_document<D: Document>(&mut self, doc: &D) -> crate::Result<u32> {
         let doc_id = self.num_docs;
         for (field, value) in doc.iter_fields_and_values() {
             let value_access = value as D::Value<'_>;
@@ -114,7 +114,7 @@ impl FastFieldsWriter {
             self.add_doc_value(doc_id, field, value_access)?;
         }
         self.num_docs += 1;
-        Ok(())
+        Ok(doc_id)
     }
 
     fn add_doc_value<'a, V: Value<'a>>(
