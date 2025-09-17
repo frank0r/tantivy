@@ -210,6 +210,8 @@ pub mod snippet;
 
 use std::fmt;
 
+pub use tantivy_fst as fst;
+
 pub use census::{Inventory, TrackedObject};
 pub use common::{f64_to_u64, i64_to_u64, u64_to_f64, u64_to_i64, HasLen};
 use once_cell::sync::Lazy;

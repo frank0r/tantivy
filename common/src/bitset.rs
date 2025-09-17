@@ -5,6 +5,9 @@ use ownedbytes::OwnedBytes;
 
 use crate::ByteCount;
 
+use byteorder::LittleEndian;
+use byteorder::ReadBytesExt;
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct TinySet(u64);
 
@@ -175,7 +178,7 @@ impl TinySet {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BitSet {
     tinysets: Box<[TinySet]>,
     len: u64,
@@ -195,6 +198,27 @@ impl BitSet {
         }
         writer.flush()?;
         Ok(())
+    }
+
+    pub fn deserialize(mut reader: impl Read) -> io::Result<Self> {
+        let max_value = reader.read_u32::<LittleEndian>()?;
+        let buckets = num_buckets(max_value);
+        let mut tinysets = Vec::with_capacity(buckets as usize);
+        let mut len = 0;
+        for _ in 0..buckets {
+            let mut buf = [0; 8];
+            reader.read_exact(&mut buf);
+            let tinyset = TinySet::deserialize(buf);
+            len += tinyset.len() as u64;
+            tinysets.push(tinyset);
+        }
+
+        let tinysets = tinysets.into_boxed_slice();
+        Ok(Self {
+            tinysets,
+            len,
+            max_value,
+        })
     }
 
     /// Create a new `BitSet` that may contain elements
@@ -402,6 +426,69 @@ impl<'a> From<&'a BitSet> for ReadOnlyBitSet {
     }
 }
 
+pub trait GenericBitSet: Send {
+    /// Returns the first non-empty `TinySet` associated with a bucket lower
+    /// or greater than bucket.
+    ///
+    /// Reminder: the tiny set with the bucket `bucket`, represents the
+    /// elements from `bucket * 64` to `(bucket+1) * 64`.
+    fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32>;
+    fn tinyset(&self, bucket: u32) -> TinySet;
+
+    fn max_value(&self) -> u32;
+    fn len(&self) -> usize;
+}
+
+impl GenericBitSet for BitSet {
+    #[inline]
+    fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
+        BitSet::first_non_empty_bucket(self, bucket)
+    }
+
+    #[inline]
+    fn max_value(&self) -> u32 {
+        BitSet::max_value(self)
+    }
+
+    #[inline]
+    fn tinyset(&self, bucket: u32) -> TinySet {
+        BitSet::tinyset(self, bucket)
+    }
+
+    /// Returns the number of elements in the `BitSet`.
+    #[inline]
+    fn len(&self) -> usize {
+        BitSet::len(self)
+    }
+}
+
+impl GenericBitSet for ReadOnlyBitSet {
+    fn first_non_empty_bucket(&self, bucket: u32) -> Option<u32> {
+        self.data[(bucket as usize * 8)..]
+            .chunks_exact(8)
+            .map(|c| TinySet::deserialize(c.try_into().unwrap()))
+            .position(|tinyset| !tinyset.is_empty())
+            .map(|delta_bucket| bucket + delta_bucket as u32)
+    }
+
+    #[inline]
+    fn max_value(&self) -> u32 {
+        self.max_value
+    }
+
+    #[inline]
+    fn tinyset(&self, bucket: u32) -> TinySet {
+        let byte_offset = bucket as usize * 8;
+        let chunk = self.data[byte_offset..byte_offset + 8].try_into().unwrap();
+        TinySet::deserialize(chunk)
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        ReadOnlyBitSet::len(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -421,8 +508,10 @@ mod tests {
             let mut out = vec![];
             bitset.serialize(&mut out).unwrap();
 
-            let bitset = ReadOnlyBitSet::open(OwnedBytes::new(out));
-            assert_eq!(bitset.len(), i as usize);
+            let read_only_bitset = ReadOnlyBitSet::open(OwnedBytes::new(out.clone()));
+            assert_eq!(read_only_bitset.len(), i as usize);
+            let bitset_deserialized = BitSet::deserialize(&out[..]).unwrap();
+            assert_eq!(bitset, bitset_deserialized);
         }
     }
 

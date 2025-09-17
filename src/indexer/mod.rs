@@ -4,6 +4,9 @@
 //! `IndexWriter` is the main entry point for that, which created from
 //! [`Index::writer`](crate::Index::writer).
 
+// use byteorder::LittleEndian;
+// use byteorder::ReadBytesExt;
+
 pub(crate) mod delete_queue;
 pub(crate) mod path_to_unordered_id;
 
@@ -24,8 +27,8 @@ mod segment_manager;
 mod segment_register;
 pub(crate) mod segment_serializer;
 pub(crate) mod segment_updater;
-pub(crate) mod segment_writer;
-pub(crate) mod single_segment_index_writer;
+pub mod segment_writer;
+pub mod single_segment_index_writer;
 mod stamper;
 
 use crossbeam_channel as channel;

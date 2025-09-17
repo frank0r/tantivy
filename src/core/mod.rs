@@ -3,6 +3,8 @@ mod executor;
 pub mod json_utils;
 pub mod searcher;
 
+pub use crate::indexer::single_segment_index_writer;
+
 use std::path::Path;
 
 use once_cell::sync::Lazy;

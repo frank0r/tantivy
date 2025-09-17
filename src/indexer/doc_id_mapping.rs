@@ -13,7 +13,7 @@ pub enum MappingType {
 
 /// Struct to provide mapping from new doc_id to old doc_id and segment.
 #[derive(Clone)]
-pub(crate) struct SegmentDocIdMapping {
+pub struct SegmentDocIdMapping {
     pub(crate) new_doc_id_to_old_doc_addr: Vec<DocAddress>,
     pub(crate) alive_bitsets: Vec<Option<ReadOnlyBitSet>>,
     mapping_type: MappingType,
@@ -43,4 +43,13 @@ impl SegmentDocIdMapping {
     pub(crate) fn iter_old_doc_addrs(&self) -> impl Iterator<Item = DocAddress> + '_ {
         self.new_doc_id_to_old_doc_addr.iter().copied()
     }
+
+    pub fn iter_old_doc_addrs_enumerated(&self) -> impl Iterator<Item = (DocId, DocAddress)> + '_ {
+        self.new_doc_id_to_old_doc_addr.iter().enumerate().map(|(i, addr)| (i as DocId, *addr))
+    }
+
+    pub fn len(&self) -> usize {
+        self.new_doc_id_to_old_doc_addr.len()
+    }
+
 }

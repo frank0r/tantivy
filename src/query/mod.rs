@@ -30,7 +30,7 @@ mod weight;
 #[cfg(test)]
 mod vec_docset;
 
-pub(crate) mod score_combiner;
+pub mod score_combiner;
 pub use query_grammar::Occur;
 
 pub use self::all_query::{AllQuery, AllScorer, AllWeight};
@@ -61,7 +61,7 @@ pub use self::reqopt_scorer::RequiredOptionalScorer;
 pub use self::score_combiner::{DisjunctionMaxCombiner, ScoreCombiner, SumCombiner};
 pub use self::scorer::Scorer;
 pub use self::set_query::TermSetQuery;
-pub use self::term_query::TermQuery;
+pub use self::term_query::{TermQuery, TermScorer};
 pub use self::union::BufferedUnionScorer;
 #[cfg(test)]
 pub use self::vec_docset::VecDocSet;

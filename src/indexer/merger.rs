@@ -525,7 +525,7 @@ impl IndexMerger {
     ///
     /// # Returns
     /// The number of documents in the resulting segment.
-    pub fn write(&self, mut serializer: SegmentSerializer) -> crate::Result<u32> {
+    pub fn write(&self, mut serializer: SegmentSerializer) -> crate::Result<u32,SegmentDocIdMapping> {
         let doc_id_mapping = self.get_doc_id_from_concatenated_data()?;
         debug!("write-fieldnorms");
         if let Some(fieldnorms_serializer) = serializer.extract_fieldnorms_serializer() {
@@ -549,7 +549,7 @@ impl IndexMerger {
 
         debug!("close-serializer");
         serializer.close()?;
-        Ok(self.max_doc)
+        Ok(self.max_doc, doc_id_mapping)
     }
 }
 
