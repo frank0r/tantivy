@@ -17,5 +17,5 @@ homepage = "https://github.com/quickwit-oss/tantivy"
 [dependencies]
 
 [dev-dependencies]
-rand = "0.8"
+rand = "0.9"
 proptest = "1"

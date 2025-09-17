@@ -9,7 +9,7 @@ itertools = "0.10.5"
 log = "0.4.17"
 fnv = "1.0.7"
 fastdivide = "0.4.0"
-rand = { version = "0.8.5", optional = true }
+rand = { version = "0.9.2", optional = true }
 measure_time = { version = "0.8.2", optional = true }
 prettytable-rs = { version = "0.10.0", optional = true }
 
@@ -21,7 +21,7 @@ tantivy-bitpacker = { version= "0.3", path = "../bitpacker/" }
 [dev-dependencies]
 proptest = "1.0.0"
 more-asserts = "0.3.1"
-rand = "0.8.5"
+rand = "0.9.2"
 
 [features]
 unstable = []

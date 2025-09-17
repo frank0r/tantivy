@@ -15,7 +15,7 @@ repository = "https://github.com/quickwit-oss/tantivy"
 common = { version = "0.5", path = "../common/", package = "tantivy-common" }
 tantivy-bitpacker = { version= "0.3", path = "../bitpacker/" }
 prettytable-rs = {version="0.10.0", optional= true}
-rand = {version="0.8.3", optional= true}
+rand = {version="0.9.2", optional= true}
 fastdivide = "0.4"
 log = "0.4"
 itertools = { version = "0.10.3" }
@@ -24,7 +24,7 @@ measure_time = { version="0.8.2", optional=true}
 [dev-dependencies]
 more-asserts = "0.3.0"
 proptest = "1.0.0"
-rand = "0.8.3"
+rand = "0.9.2"
 
 [features]
 bin = ["prettytable-rs", "rand", "measure_time"]
